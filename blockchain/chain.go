@@ -1747,7 +1747,6 @@ func New(config *Config) (*BlockChain, error) {
 	params := config.ChainParams
 	targetTimespan := int64(params.TargetTimespan / time.Second)
 	targetTimePerBlock := int64(params.TargetTimePerBlock / time.Second)
-	adjustmentFactor := params.RetargetAdjustmentFactor
 	b := BlockChain{
 		checkpoints:         config.Checkpoints,
 		checkpointsByHeight: checkpointsByHeight,
@@ -1756,8 +1755,8 @@ func New(config *Config) (*BlockChain, error) {
 		timeSource:          config.TimeSource,
 		sigCache:            config.SigCache,
 		indexManager:        config.IndexManager,
-		minRetargetTimespan: targetTimespan / adjustmentFactor,
-		maxRetargetTimespan: targetTimespan * adjustmentFactor,
+		minRetargetTimespan: targetTimespan - (targetTimespan / 8),
+		maxRetargetTimespan: targetTimespan + (targetTimespan / 2),
 		blocksPerRetarget:   int32(targetTimespan / targetTimePerBlock),
 		index:               newBlockIndex(config.DB, params),
 		hashCache:           config.HashCache,
@@ -1772,6 +1771,20 @@ func New(config *Config) (*BlockChain, error) {
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
 	if err := b.initChainState(); err != nil {
+		return nil, err
+	}
+
+	// Helper function to insert the output in genesis block in to the
+	// transaction database.
+	fn := func(dbTx database.Tx) error {
+		genesisBlock := btcutil.NewBlock(b.chainParams.GenesisBlock)
+		view := NewUtxoViewpoint()
+		if err := view.connectTransactions(genesisBlock, nil); err != nil {
+			return err
+		}
+		return dbPutUtxoView(dbTx, view)
+	}
+	if err := b.db.Update(fn); err != nil {
 		return nil, err
 	}
 

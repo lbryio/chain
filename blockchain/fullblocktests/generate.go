@@ -31,11 +31,11 @@ const (
 	// Intentionally defined here rather than using constants from codebase
 	// to ensure consensus changes are detected.
 	maxBlockSigOps       = 20000
-	maxBlockSize         = 1000000
+	maxBlockSize         = 2000000
 	minCoinbaseScriptLen = 2
 	maxCoinbaseScriptLen = 100
 	medianTimeBlocks     = 11
-	maxScriptElementSize = 520
+	maxScriptElementSize = 20000
 
 	// numLargeReorgBlocks is the number of blocks to use in the large block
 	// reorg test (when enabled).  This is the equivalent of 1 week's worth
@@ -1875,7 +1875,7 @@ func Generate(includeLargeReorg bool) (tests [][]TestInstance, err error) {
 	//
 	//  Comment assumptions:
 	//    maxBlockSigOps = 20000
-	//    maxScriptElementSize = 520
+	//    maxScriptElementSize = 20000
 	//
 	//  [0-19999]    : OP_CHECKSIG
 	//  [20000]      : OP_PUSHDATA4

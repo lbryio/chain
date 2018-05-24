@@ -95,7 +95,7 @@ var (
 var regressionNetParams = &chaincfg.Params{
 	Name:        "regtest",
 	Net:         wire.TestNet,
-	DefaultPort: "18444",
+	DefaultPort: "29246",
 
 	// Chain parameters
 	GenesisBlock:             &regTestGenesisBlock,
