@@ -173,6 +173,16 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"verifychain":           handleVerifyChain,
 	"verifymessage":         handleVerifyMessage,
 	"version":               handleVersion,
+	"getclaimsintrie":       handleGetClaimsInTrie,
+	"getclaimtrie":          handleGetClaimTrie,
+	"getvalueforname":       handleGetValueForName,
+	"getclaimsforname":      handleGetClaimsForName,
+	"gettotalclaimednames":  handleGetTotalClaimedNames,
+	"gettotalclaims":        handleGetTotalClaims,
+	"gettotalvalueofclaims": handleGetTotalValueOfClaims,
+	"getclaimsfortx":        handleGetClaimsForTx,
+	"getnameproof":          handleGetNameProof,
+	"getclaimbyid":          handleGetClaimByID,
 }
 
 // list of commands that we recognize, but for which btcd has no support because
@@ -280,6 +290,17 @@ var rpcLimited = map[string]struct{}{
 	"validateaddress":       {},
 	"verifymessage":         {},
 	"version":               {},
+
+	"getclaimsintrie":       {},
+	"getclaimtrie":          {},
+	"getvalueforname":       {},
+	"getclaimsforname":      {},
+	"gettotalclaimednames":  {},
+	"gettotalclaims":        {},
+	"gettotalvalueofclaims": {},
+	"getclaimsfortx":        {},
+	"getnameproof":          {},
+	"getclaimbyid":          {},
 }
 
 // builderScript is a convenience function which is used for hard-coded scripts

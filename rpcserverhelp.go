@@ -244,6 +244,7 @@ var helpDescsEnUS = map[string]string{
 	"getblockverboseresult-version":           "The block version",
 	"getblockverboseresult-versionHex":        "The block version in hexadecimal",
 	"getblockverboseresult-merkleroot":        "Root hash of the merkle tree",
+	"getblockverboseresult-claimTrie":         "Root hash of the claimtrie",
 	"getblockverboseresult-tx":                "The transaction hashes (only when verbosetx=false)",
 	"getblockverboseresult-rawtx":             "The transactions as JSON objects (only when verbosetx=true)",
 	"getblockverboseresult-time":              "The block time in seconds since 1 Jan 1970 GMT",
@@ -279,6 +280,7 @@ var helpDescsEnUS = map[string]string{
 	"getblockheaderverboseresult-version":           "The block version",
 	"getblockheaderverboseresult-versionHex":        "The block version in hexadecimal",
 	"getblockheaderverboseresult-merkleroot":        "Root hash of the merkle tree",
+	"getblockheaderverboseresult-claimtrie":         "Root hash of the claimtrie",
 	"getblockheaderverboseresult-time":              "The block time in seconds since 1 Jan 1970 GMT",
 	"getblockheaderverboseresult-nonce":             "The block nonce",
 	"getblockheaderverboseresult-bits":              "The bits which represent the block difficulty",
@@ -682,6 +684,121 @@ var helpDescsEnUS = map[string]string{
 	"versionresult-patch":         "The patch component of the JSON-RPC API version",
 	"versionresult-prerelease":    "Prerelease info about the current build",
 	"versionresult-buildmetadata": "Metadata about the current build",
+
+	// -------- ClaimTrie-specific help --------
+
+	// GetClaimsInTrieCmd help.
+	"getclaimsintrie--synopsis":  "Returns all claims in the name trie.",
+	"claimsintrieentry-name":     "The name claimed",
+	"claimsintrieentry-claims":   "The claims for this name",
+	"claimsintriedetail-value":   "The value of this claim",
+	"claimsintriedetail-claimId": "The claimId of the claim",
+	"claimsintriedetail-txid":    "The txid of the claim",
+	"claimsintriedetail-n":       "The vout value of the claim",
+	"claimsintriedetail-amount":  "TxOut amount (ROY:FIXME)",
+	"claimsintriedetail-height":  "The height of the block in which this transaction is located",
+
+	// GetClaimTrieCmd help.
+	"getclaimtrie--synopsis": "Returns the entire name trie.",
+	"claimtrieentry-name":    "The name of the node",
+	"claimtrieentry-hash":    "The hash of the node",
+	"claimtrieentry-txid":    "(if value exists) The hash of the transaction which has successfully claimed this name",
+	"claimtrieentry-n":       "(if value exists) Vout value",
+	"claimtrieentry-value":   "(if value exists) TxOut value",
+	"claimtrieentry-height":  "(if value exists) The height of the block in which this transaction is located",
+
+	// GeValueForNameCmd help.
+	"getvalueforname--synopsis":              "Returns the value associated with a name, if one exists.",
+	"getvalueforname-name":                   "The name to look up",
+	"getvaluefornameresult-value":            "The value of the name, if it exists",
+	"getvaluefornameresult-claimId":          "The claimId for this name claim",
+	"getvaluefornameresult-txid":             "The hash of the transaction which successfully claimed the name",
+	"getvaluefornameresult-n":                "Vout value",
+	"getvaluefornameresult-amount":           "TxOut amount",
+	"getvaluefornameresult-effective amount": "TxOut amount plus amount from all supports associated with the claim",
+	"getvaluefornameresult-height":           "The height of the block in which this transaction is located",
+
+	// GetClaimsForNameCmd help.
+	"getclaimsforname--synopsis":                 "Returns all claims and supports for a name.",
+	"getclaimsforname-name":                      "The name for which to get claims and supports",
+	"getclaimsfornameresult-nLastTakeoverheight": "The last height at which ownership of the name changed",
+	"getclaimsfornameresult-claims":              "Claims for this name",
+	"getclaimsfornameresult-unmatched supports":  "Supports that did not match a claim for this name",
+	"claimforname-claimId":                       "The claimId of this claim",
+	"claimforname-txid":                          "The txid of this claim",
+	"claimforname-n":                             "The index of the claim in the transaction's list of outputs",
+	"claimforname-nHeight":                       "The height at which the claim was included in the blockchain",
+	"claimforname-nValidAtHeight":                "The height at which the claim became/becomes valid",
+	"claimforname-nAmount":                       "The amount of the claim",
+	"claimforname-nEffectiveAmount":              "The total effective amount of the claim, taking into effect whether the claim or support has reached its nValidAtHeight",
+	"claimforname-supports":                      "supports for this claim",
+	"supportofclaim-txid":                        "The txid of the support",
+	"supportofclaim-n":                           "The index of the support in the transaction's list of outputs",
+	"supportofclaim-nHeight":                     "The height at which the support was included in the blockchain",
+	"supportofclaim-nValidAtHeight":              "The height at which the support became/becomes valid",
+	"supportofclaim-nAmount":                     "The amount of the support",
+
+	// GetTotalClaimedNamesCmd help.
+	"gettotalclaimednames--synopsis": "Returns the total number of names that have been successfully claimed, and therefore exist in the trie.",
+	"gettotalclaimednames--result0":  "The total number of names in the trie",
+
+	// GetTotalClaimsCmd help.
+	"gettotalclaims--synopsis": "Returns the total number of active claims in the trie.",
+	"gettotalclaims--result0":  "The total number of active claims",
+
+	// GetTotalValueOfClaimsCmd help.
+	"gettotalvalueofclaims--synopsis":       "Return the total value of the claims in the trie.",
+	"gettotalvalueofclaims-controllingonly": "Only include the value of controlling claims",
+	"gettotalvalueofclaims--result0":        "The total value of the claims in the trie",
+
+	// GetClaimsForTxCmd help.
+	"getclaimsfortx--synopsis":         "Return any claims or supports found in a transaction.",
+	"getclaimsfortx-txid":              "The txid of the transaction to check for unspent claims",
+	"claimsfortxentry-nOut":            "the index of the claim or support in the transaction's list out outputs",
+	"claimsfortxentry-claim type":      "'claim' or 'support'",
+	"claimsfortxentry-name":            "The name claimed or supported",
+	"claimsfortxentry-value":           "If a name claim, the value of the claim",
+	"claimsfortxentry-supported txid":  "If a support, the txid of the supported claim",
+	"claimsfortxentry-supported nout":  "If a support, the index of the supported claim in its transaction",
+	"claimsfortxentry-depth":           "The depth of the transaction in the main chain",
+	"claimsfortxentry-in claim trie":   "If a name claim, whether the claim is active, i.e. has made it into the trie",
+	"claimsfortxentry-is controlling":  "If a name claim, whether the claim is the current controlling claim for the name",
+	"claimsfortxentry-in support map":  "If a support, whether the support is active, i.e. has made it into the support map",
+	"claimsfortxentry-in queue":        "Whether the claim is in a queue waiting to be inserted into the trie or support map",
+	"claimsfortxentry-blocks to valid": "If in a queue, the number of blocks until it's inserted into the trie or support map",
+
+	// GetNameProofCmd help.
+	"getnameproof--synopsis": "Return the cryptographic proof that a name maps to a value or doesn't.",
+	"getnameproof-name":      "The name to get a proof for",
+	"getnameproof-blockhash": "The hash of the block which is the basis of the proof. If none is given, the latest block will be used.",
+
+	"getnameproofresult-nodes":                "Full nodes (i.e. those which lead to the requested name)",
+	"getnameproofresult-txhash":               "(if exists) the txid of the claim which controls this name, if there is one",
+	"getnameproofresult-nOut":                 "the nOut of the claim which controls this name, if there is one.",
+	"getnameproofresult-last takeover height": "The most recent height at which the value of a name changed other than through an update to the winning bid",
+	"nameproofnode-children":                  "The children of  this node",
+	"nameproofnode-valueHash":                 "(if exists) the hash of this node's value, if  it has one. If this is the requested name this will not exist whether the node has a value or not",
+	"nameproofnodechild-character":            "The character which leads from the parent to this child node",
+	"nameproofnodechild-nodeHash":             "(if exists) the hash of the node if this is a leaf node",
+
+	// GetClaimByIDCmd help.
+	"getclaimbyid--synopsis":              "Returns a claim by ID.",
+	"getclaimbyid-id":                     "The claimId of this claim",
+	"getclaimbyidresult-name":             "The name of the claim",
+	"getclaimbyidresult-value":            "Claim metadata",
+	"getclaimbyidresult-claimId":          "The claimId of this claim",
+	"getclaimbyidresult-txid":             "The hash of the transaction which has successfully claimed this name",
+	"getclaimbyidresult-n":                "Vout value",
+	"getclaimbyidresult-amount":           "TxOut value",
+	"getclaimbyidresult-effective amount": "TxOut amount plus amount from all supports associated with the claim",
+	"getclaimbyidresult-height":           "The height of the block in which this claim transaction is located",
+	"getclaimbyidresult-supports":         "Supports for this claim",
+	"getclaimbyidresult-valid at height":  "The height at which the claim is valid",
+	"claimbyidsupport-txid":               "The txid of the support",
+	"claimbyidsupport-n":                  "The index of the support in the transaction's list of outputs",
+	"claimbyidsupport-height":             "The height at which the support was included in the blockchain",
+	"claimbyidsupport-valid at height":    "The height at which the support is valid",
+	"claimbyidsupport-amount":             "The amount of the support",
 }
 
 // rpcResultTypes specifies the result types that each RPC command can return.
@@ -748,6 +865,18 @@ var rpcResultTypes = map[string][]interface{}{
 	"stopnotifyspent":           nil,
 	"rescan":                    nil,
 	"rescanblocks":              {(*[]btcjson.RescannedBlock)(nil)},
+
+	// ClaimTrie commands.
+	"getclaimsintrie":       {(*btcjson.GetClaimsInTrieResult)(nil)},
+	"getclaimtrie":          {(*btcjson.GetClaimTrieResult)(nil)},
+	"getvalueforname":       {(*btcjson.GetValueForNameResult)(nil)},
+	"getclaimsforname":      {(*btcjson.GetClaimsForNameResult)(nil)},
+	"gettotalclaimednames":  {(*int64)(nil)},
+	"gettotalclaims":        {(*int64)(nil)},
+	"gettotalvalueofclaims": {(*int64)(nil)},
+	"getclaimsfortx":        {(*btcjson.GetClaimsForTxResult)(nil)},
+	"getnameproof":          {(*btcjson.GetNameProofResult)(nil)},
+	"getclaimbyid":          {(*btcjson.GetClaimByIDResult)(nil)},
 }
 
 // helpCacher provides a concurrent safe type that provides help and usage for
