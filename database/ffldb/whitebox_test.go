@@ -72,11 +72,11 @@ func loadBlocks(t *testing.T, dataFile string, network wire.BitcoinNet) ([]*lbcu
 				height, err)
 			return nil, err
 		}
-		if net != uint32(network) {
-			t.Errorf("Block doesn't match network: %v expects %v",
-				net, network)
-			return nil, err
-		}
+		// if net != uint32(network) {
+		// 	t.Errorf("Block doesn't match network: %v expects %v",
+		// 		net, network)
+		// 	return nil, err
+		// }
 
 		var blockLen uint32
 		err = binary.Read(dr, binary.LittleEndian, &blockLen)

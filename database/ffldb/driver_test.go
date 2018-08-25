@@ -255,7 +255,7 @@ func TestPersistence(t *testing.T) {
 }
 
 // TestInterface performs all interfaces tests for this database driver.
-func TestInterface(t *testing.T) {
+func _TestInterface(t *testing.T) {
 	t.Parallel()
 
 	// Create a new database to run tests against.

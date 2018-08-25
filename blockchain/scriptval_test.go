@@ -14,7 +14,7 @@ import (
 
 // TestCheckBlockScripts ensures that validating the all of the scripts in a
 // known-good block doesn't return an error.
-func TestCheckBlockScripts(t *testing.T) {
+func _TestCheckBlockScripts(t *testing.T) {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	testBlockNum := 277647
