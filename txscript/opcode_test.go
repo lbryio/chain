@@ -117,6 +117,15 @@ func TestOpcodeDisasm(t *testing.T) {
 			case 0xb2:
 				// OP_NOP3 is an alias of OP_CHECKSEQUENCEVERIFY
 				expectedStr = "OP_CHECKSEQUENCEVERIFY"
+			case 0xb5:
+				// OP_NOP6 is an alias of OP_CLAIMNAME
+				expectedStr = "OP_CLAIMNAME"
+			case 0xb6:
+				// OP_NOP7 is an alias of OP_SUPPORTCLAIM
+				expectedStr = "OP_SUPPORTCLAIM"
+			case 0xb7:
+				// OP_NOP8 is an alias of OP_UPDATECLAIM
+				expectedStr = "OP_UPDATECLAIM"
 			default:
 				val := byte(opcodeVal - (0xb0 - 1))
 				expectedStr = "OP_NOP" + strconv.Itoa(int(val))
@@ -183,6 +192,15 @@ func TestOpcodeDisasm(t *testing.T) {
 			case 0xb2:
 				// OP_NOP3 is an alias of OP_CHECKSEQUENCEVERIFY
 				expectedStr = "OP_CHECKSEQUENCEVERIFY"
+			case 0xb5:
+				// OP_NOP6 is an alias of OP_CLAIMNAME
+				expectedStr = "OP_CLAIMNAME"
+			case 0xb6:
+				// OP_NOP7 is an alias of OP_SUPPORTCLAIM
+				expectedStr = "OP_SUPPORTCLAIM"
+			case 0xb7:
+				// OP_NOP8 is an alias of OP_UPDATECLAIM
+				expectedStr = "OP_UPDATECLAIM"
 			default:
 				val := byte(opcodeVal - (0xb0 - 1))
 				expectedStr = "OP_NOP" + strconv.Itoa(int(val))

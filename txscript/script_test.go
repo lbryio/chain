@@ -3541,49 +3541,49 @@ func TestUnparsingInvalidOpcodes(t *testing.T) {
 			expectedErr: scriptError(ErrInternal, ""),
 		},
 		{
-			name: "OP_NOP6",
+			name: "OP_CLAIMNAME",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP6],
+				opcode: &opcodeArray[OP_CLAIMNAME],
 				data:   nil,
 			},
 			expectedErr: nil,
 		},
 		{
-			name: "OP_NOP6 long",
+			name: "OP_CLAIMNAME long",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP6],
+				opcode: &opcodeArray[OP_CLAIMNAME],
 				data:   make([]byte, 1),
 			},
 			expectedErr: scriptError(ErrInternal, ""),
 		},
 		{
-			name: "OP_NOP7",
+			name: "OP_SUPPORTCLAIM",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP7],
+				opcode: &opcodeArray[OP_SUPPORTCLAIM],
 				data:   nil,
 			},
 			expectedErr: nil,
 		},
 		{
-			name: "OP_NOP7 long",
+			name: "OP_SUPPORTCLAIM long",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP7],
+				opcode: &opcodeArray[OP_SUPPORTCLAIM],
 				data:   make([]byte, 1),
 			},
 			expectedErr: scriptError(ErrInternal, ""),
 		},
 		{
-			name: "OP_NOP8",
+			name: "OP_UPDATECLAIM",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP8],
+				opcode: &opcodeArray[OP_UPDATECLAIM],
 				data:   nil,
 			},
 			expectedErr: nil,
 		},
 		{
-			name: "OP_NOP8 long",
+			name: "OP_UPDATECLAIM long",
 			pop: &parsedOpcode{
-				opcode: &opcodeArray[OP_NOP8],
+				opcode: &opcodeArray[OP_UPDATECLAIM],
 				data:   make([]byte, 1),
 			},
 			expectedErr: scriptError(ErrInternal, ""),

@@ -229,8 +229,8 @@ func TestScriptBuilderAddData(t *testing.T) {
 		// bytes are not allowed, and those below can be done using
 		// other operators.
 		{
-			name:     "push data len 521",
-			data:     bytes.Repeat([]byte{0x49}, 521),
+			name:     "push data len 20001",
+			data:     bytes.Repeat([]byte{0x49}, 20001),
 			expected: nil,
 		},
 		{
