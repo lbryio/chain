@@ -1149,6 +1149,14 @@ func (mp *TxPool) maybeAcceptTransaction(tx *lbcutil.Tx, isNew, rateLimit, rejec
 		return nil, nil, txRuleError(wire.RejectInsufficientFee, str)
 	}
 
+	minFee = txscript.CalcMinClaimTrieFee(tx.MsgTx(), txscript.MinFeePerNameclaimChar)
+	if txFee < minFee {
+		str := fmt.Sprintf("transaction %v has %d fees which is under "+
+			"the required amount of %d for Claims", txHash, txFee,
+			minFee)
+		return nil, nil, txRuleError(wire.RejectInsufficientFee, str)
+	}
+
 	// Require that free transactions have sufficient priority to be mined
 	// in the next block.  Transactions which are being added back to the
 	// memory pool from blocks that have been disconnected during a reorg
