@@ -227,50 +227,55 @@ func TestMerkleBlockWireErrors(t *testing.T) {
 			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 36,
 			io.ErrShortWrite, io.EOF,
 		},
-		// Force error in timestamp.
+		// Force error in claimtrie.
 		{
 			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 68,
 			io.ErrShortWrite, io.EOF,
 		},
+		// Force error in timestamp.
+		{
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 100,
+			io.ErrShortWrite, io.EOF,
+		},
 		// Force error in difficulty bits.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 72,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 104,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error in header nonce.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 76,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 108,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error in transaction count.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 80,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 112,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error in num hashes.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 84,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 116,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error in hashes.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 85,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 117,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error in num flag bytes.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 117,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 149,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error in flag bytes.
 		{
-			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 118,
+			&merkleBlockOne, merkleBlockOneBytes, pver, BaseEncoding, 150,
 			io.ErrShortWrite, io.EOF,
 		},
 		// Force error due to unsupported protocol version.
 		{
 			&merkleBlockOne, merkleBlockOneBytes, pverNoMerkleBlock,
-			BaseEncoding, 119, wireErr, wireErr,
+			BaseEncoding, 151, wireErr, wireErr,
 		},
 	}
 
@@ -331,7 +336,7 @@ func TestMerkleBlockOverflowErrors(t *testing.T) {
 	// allowed tx hashes.
 	var buf bytes.Buffer
 	WriteVarInt(&buf, pver, maxTxPerBlock+1)
-	numHashesOffset := 84
+	numHashesOffset := 116
 	exceedMaxHashes := make([]byte, numHashesOffset)
 	copy(exceedMaxHashes, merkleBlockOneBytes[:numHashesOffset])
 	exceedMaxHashes = append(exceedMaxHashes, buf.Bytes()...)
@@ -340,7 +345,7 @@ func TestMerkleBlockOverflowErrors(t *testing.T) {
 	// allowed flag bytes.
 	buf.Reset()
 	WriteVarInt(&buf, pver, maxFlagsPerMerkleBlock+1)
-	numFlagBytesOffset := 117
+	numFlagBytesOffset := 149
 	exceedMaxFlagBytes := make([]byte, numFlagBytesOffset)
 	copy(exceedMaxFlagBytes, merkleBlockOneBytes[:numFlagBytesOffset])
 	exceedMaxFlagBytes = append(exceedMaxFlagBytes, buf.Bytes()...)
@@ -416,6 +421,10 @@ var merkleBlockOneBytes = []byte{
 	0xbb, 0xbe, 0x68, 0x0e, 0x1f, 0xee, 0x14, 0x67,
 	0x7b, 0xa1, 0xa3, 0xc3, 0x54, 0x0b, 0xf7, 0xb1,
 	0xcd, 0xb6, 0x06, 0xe8, 0x57, 0x23, 0x3e, 0x0e, // MerkleRoot
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // ClaimTrie
 	0x61, 0xbc, 0x66, 0x49, // Timestamp
 	0xff, 0xff, 0x00, 0x1d, // Bits
 	0x01, 0xe3, 0x62, 0x99, // Nonce
