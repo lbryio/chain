@@ -29,7 +29,7 @@ func dirEmpty(dirPath string) (bool, error) {
 }
 
 // oldBtcdHomeDir returns the OS specific home directory btcd used prior to
-// version 0.3.3.  This has since been replaced with btcutil.AppDataDir, but
+// version 0.3.3.  This has since been replaced with lbcutil.AppDataDir, but
 // this function is still provided for the automatic upgrade path.
 func oldBtcdHomeDir() string {
 	// Search for Windows APPDATA first.  This won't exist on POSIX OSes.

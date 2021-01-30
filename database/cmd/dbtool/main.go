@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/btcsuite/btcd/database"
-	"github.com/btcsuite/btclog"
+	"github.com/lbryio/lbrycrd.go/database"
+	"github.com/lbrycrd.go/btclog"
 	flags "github.com/jessevdk/go-flags"
 )
 

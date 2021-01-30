@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/btcsuite/btcd/blockchain"
-	"github.com/btcsuite/btcd/blockchain/indexers"
-	"github.com/btcsuite/btcd/database"
-	"github.com/btcsuite/btcd/limits"
-	"github.com/btcsuite/btclog"
+	"github.com/lbryio/lbrycrd.go/blockchain"
+	"github.com/lbryio/lbrycrd.go/blockchain/indexers"
+	"github.com/lbryio/lbrycrd.go/database"
+	"github.com/lbryio/lbrycrd.go/limits"
+	"github.com/lbrycrd.go/btclog"
 )
 
 const (

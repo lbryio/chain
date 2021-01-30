@@ -14,18 +14,18 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/database"
-	"github.com/btcsuite/btcd/database/internal/treap"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/goleveldb/leveldb"
-	"github.com/btcsuite/goleveldb/leveldb/comparer"
-	ldberrors "github.com/btcsuite/goleveldb/leveldb/errors"
-	"github.com/btcsuite/goleveldb/leveldb/filter"
-	"github.com/btcsuite/goleveldb/leveldb/iterator"
-	"github.com/btcsuite/goleveldb/leveldb/opt"
-	"github.com/btcsuite/goleveldb/leveldb/util"
+	"github.com/lbryio/lbrycrd.go/chaincfg/chainhash"
+	"github.com/lbryio/lbrycrd.go/database"
+	"github.com/lbryio/lbrycrd.go/database/internal/treap"
+	"github.com/lbryio/lbrycrd.go/wire"
+	"github.com/lbryio/lbcutil"
+	"github.com/lbrycrd.go/goleveldb/leveldb"
+	"github.com/lbrycrd.go/goleveldb/leveldb/comparer"
+	ldberrors "github.com/lbrycrd.go/goleveldb/leveldb/errors"
+	"github.com/lbrycrd.go/goleveldb/leveldb/filter"
+	"github.com/lbrycrd.go/goleveldb/leveldb/iterator"
+	"github.com/lbrycrd.go/goleveldb/leveldb/opt"
+	"github.com/lbrycrd.go/goleveldb/leveldb/util"
 )
 
 const (
@@ -1146,7 +1146,7 @@ func (tx *transaction) hasBlock(hash *chainhash.Hash) bool {
 //   - ErrTxClosed if the transaction has already been closed
 //
 // This function is part of the database.Tx interface implementation.
-func (tx *transaction) StoreBlock(block *btcutil.Block) error {
+func (tx *transaction) StoreBlock(block *lbcutil.Block) error {
 	// Ensure transaction state is valid.
 	if err := tx.checkClosed(); err != nil {
 		return err

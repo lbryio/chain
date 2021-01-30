@@ -12,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/btcsuite/btcd/blockchain"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
+	"github.com/lbryio/lbrycrd.go/blockchain"
+	"github.com/lbryio/lbrycrd.go/btcec"
+	"github.com/lbryio/lbrycrd.go/chaincfg"
+	"github.com/lbryio/lbrycrd.go/chaincfg/chainhash"
+	"github.com/lbryio/lbrycrd.go/txscript"
+	"github.com/lbryio/lbrycrd.go/wire"
+	"github.com/lbryio/lbcutil"
 )
 
 // fakeChain is used by the pool harness to provide generated test utxos and
@@ -37,7 +37,7 @@ type fakeChain struct {
 // view can be examined for duplicate transactions.
 //
 // This function is safe for concurrent access however the returned view is NOT.
-func (s *fakeChain) FetchUtxoView(tx *btcutil.Tx) (*blockchain.UtxoViewpoint, error) {
+func (s *fakeChain) FetchUtxoView(tx *lbcutil.Tx) (*blockchain.UtxoViewpoint, error) {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -97,7 +97,7 @@ func (s *fakeChain) SetMedianTimePast(mtp time.Time) {
 
 // CalcSequenceLock returns the current sequence lock for the passed
 // transaction associated with the fake chain instance.
-func (s *fakeChain) CalcSequenceLock(tx *btcutil.Tx,
+func (s *fakeChain) CalcSequenceLock(tx *lbcutil.Tx,
 	view *blockchain.UtxoViewpoint) (*blockchain.SequenceLock, error) {
 
 	return &blockchain.SequenceLock{
@@ -110,16 +110,16 @@ func (s *fakeChain) CalcSequenceLock(tx *btcutil.Tx,
 // amount associated with it.
 type spendableOutput struct {
 	outPoint wire.OutPoint
-	amount   btcutil.Amount
+	amount   lbcutil.Amount
 }
 
 // txOutToSpendableOut returns a spendable output given a transaction and index
 // of the output to use.  This is useful as a convenience when creating test
 // transactions.
-func txOutToSpendableOut(tx *btcutil.Tx, outputNum uint32) spendableOutput {
+func txOutToSpendableOut(tx *lbcutil.Tx, outputNum uint32) spendableOutput {
 	return spendableOutput{
 		outPoint: wire.OutPoint{Hash: *tx.Hash(), Index: outputNum},
-		amount:   btcutil.Amount(tx.MsgTx().TxOut[outputNum].Value),
+		amount:   lbcutil.Amount(tx.MsgTx().TxOut[outputNum].Value),
 	}
 }
 
@@ -133,7 +133,7 @@ type poolHarness struct {
 	// payAddr is the p2sh address for the signing key and is used for the
 	// payment address throughout the tests.
 	signKey     *btcec.PrivateKey
-	payAddr     btcutil.Address
+	payAddr     lbcutil.Address
 	payScript   []byte
 	chainParams *chaincfg.Params
 
@@ -146,7 +146,7 @@ type poolHarness struct {
 // address associated with the harness.  It automatically uses a standard
 // signature script that starts with the block height that is required by
 // version 2 blocks.
-func (p *poolHarness) CreateCoinbaseTx(blockHeight int32, numOutputs uint32) (*btcutil.Tx, error) {
+func (p *poolHarness) CreateCoinbaseTx(blockHeight int32, numOutputs uint32) (*lbcutil.Tx, error) {
 	// Create standard coinbase script.
 	extraNonce := int64(0)
 	coinbaseScript, err := txscript.NewScriptBuilder().
@@ -180,7 +180,7 @@ func (p *poolHarness) CreateCoinbaseTx(blockHeight int32, numOutputs uint32) (*b
 		})
 	}
 
-	return btcutil.NewTx(tx), nil
+	return lbcutil.NewTx(tx), nil
 }
 
 // CreateSignedTx creates a new signed transaction that consumes the provided
@@ -188,12 +188,12 @@ func (p *poolHarness) CreateCoinbaseTx(blockHeight int32, numOutputs uint32) (*b
 // total input amount.  All outputs will be to the payment script associated
 // with the harness and all inputs are assumed to do the same.
 func (p *poolHarness) CreateSignedTx(inputs []spendableOutput,
-	numOutputs uint32, fee btcutil.Amount,
-	signalsReplacement bool) (*btcutil.Tx, error) {
+	numOutputs uint32, fee lbcutil.Amount,
+	signalsReplacement bool) (*lbcutil.Tx, error) {
 
 	// Calculate the total input amount and split it amongst the requested
 	// number of outputs.
-	var totalInput btcutil.Amount
+	var totalInput lbcutil.Amount
 	for _, input := range inputs {
 		totalInput += input.amount
 	}
@@ -236,15 +236,15 @@ func (p *poolHarness) CreateSignedTx(inputs []spendableOutput,
 		tx.TxIn[i].SignatureScript = sigScript
 	}
 
-	return btcutil.NewTx(tx), nil
+	return lbcutil.NewTx(tx), nil
 }
 
 // CreateTxChain creates a chain of zero-fee transactions (each subsequent
 // transaction spends the entire amount from the previous one) with the first
 // one spending the provided outpoint.  Each transaction spends the entire
 // amount of the previous one and as such does not include any fees.
-func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32) ([]*btcutil.Tx, error) {
-	txChain := make([]*btcutil.Tx, 0, numTxns)
+func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32) ([]*lbcutil.Tx, error) {
+	txChain := make([]*lbcutil.Tx, 0, numTxns)
 	prevOutPoint := firstOutput.outPoint
 	spendableAmount := firstOutput.amount
 	for i := uint32(0); i < numTxns; i++ {
@@ -270,7 +270,7 @@ func (p *poolHarness) CreateTxChain(firstOutput spendableOutput, numTxns uint32)
 		}
 		tx.TxIn[0].SignatureScript = sigScript
 
-		txChain = append(txChain, btcutil.NewTx(tx))
+		txChain = append(txChain, lbcutil.NewTx(tx))
 
 		// Next transaction uses outputs from this one.
 		prevOutPoint = wire.OutPoint{Hash: tx.TxHash(), Index: 0}
@@ -296,7 +296,7 @@ func newPoolHarness(chainParams *chaincfg.Params) (*poolHarness, []spendableOutp
 	// Generate associated pay-to-script-hash address and resulting payment
 	// script.
 	pubKeyBytes := signPub.SerializeCompressed()
-	payPubKeyAddr, err := btcutil.NewAddressPubKey(pubKeyBytes, chainParams)
+	payPubKeyAddr, err := lbcutil.NewAddressPubKey(pubKeyBytes, chainParams)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -366,7 +366,7 @@ type testContext struct {
 
 // addCoinbaseTx adds a spendable coinbase transaction to the test context's
 // mock chain.
-func (ctx *testContext) addCoinbaseTx(numOutputs uint32) *btcutil.Tx {
+func (ctx *testContext) addCoinbaseTx(numOutputs uint32) *lbcutil.Tx {
 	ctx.t.Helper()
 
 	coinbaseHeight := ctx.harness.chain.BestHeight() + 1
@@ -387,8 +387,8 @@ func (ctx *testContext) addCoinbaseTx(numOutputs uint32) *btcutil.Tx {
 // It can be added to the test context's mempool or mock chain based on the
 // confirmed boolean.
 func (ctx *testContext) addSignedTx(inputs []spendableOutput,
-	numOutputs uint32, fee btcutil.Amount,
-	signalsReplacement, confirmed bool) *btcutil.Tx {
+	numOutputs uint32, fee lbcutil.Amount,
+	signalsReplacement, confirmed bool) *lbcutil.Tx {
 
 	ctx.t.Helper()
 
@@ -426,7 +426,7 @@ func (ctx *testContext) addSignedTx(inputs []spendableOutput,
 // orphan pool and transaction pool status.  It also further determines if it
 // should be reported as available by the HaveTransaction function based upon
 // the two flags and tests that condition as well.
-func testPoolMembership(tc *testContext, tx *btcutil.Tx, inOrphanPool, inTxPool bool) {
+func testPoolMembership(tc *testContext, tx *lbcutil.Tx, inOrphanPool, inTxPool bool) {
 	tc.t.Helper()
 
 	txHash := tx.Hash()
@@ -615,7 +615,7 @@ func TestOrphanEviction(t *testing.T) {
 
 	// Figure out which transactions were evicted and make sure the number
 	// evicted matches the expected number.
-	var evictedTxns []*btcutil.Tx
+	var evictedTxns []*lbcutil.Tx
 	for _, tx := range chainedTxns[1:] {
 		if !harness.txPool.IsOrphanInPool(tx.Hash()) {
 			evictedTxns = append(evictedTxns, tx)
@@ -680,7 +680,7 @@ func TestBasicOrphanRemoval(t *testing.T) {
 	// Attempt to remove an orphan that has no redeemers and is not present,
 	// and ensure the state of all other orphans are unaffected.
 	nonChainedOrphanTx, err := harness.CreateSignedTx([]spendableOutput{{
-		amount:   btcutil.Amount(5000000000),
+		amount:   lbcutil.Amount(5000000000),
 		outPoint: wire.OutPoint{Hash: chainhash.Hash{}, Index: 0},
 	}}, 1, 0, false)
 	if err != nil {
@@ -938,14 +938,14 @@ func TestSignalsReplacement(t *testing.T) {
 
 	testCases := []struct {
 		name               string
-		setup              func(ctx *testContext) *btcutil.Tx
+		setup              func(ctx *testContext) *lbcutil.Tx
 		signalsReplacement bool
 	}{
 		{
 			// Transactions can signal replacement through
 			// inheritance if any of its ancestors does.
 			name: "non-signaling with unconfirmed non-signaling parent",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				coinbaseOut := txOutToSpendableOut(coinbase, 0)
@@ -963,7 +963,7 @@ func TestSignalsReplacement(t *testing.T) {
 			// inheritance if any of its ancestors does, but they
 			// must be unconfirmed.
 			name: "non-signaling with confirmed signaling parent",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				coinbaseOut := txOutToSpendableOut(coinbase, 0)
@@ -978,7 +978,7 @@ func TestSignalsReplacement(t *testing.T) {
 		},
 		{
 			name: "inherited signaling",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// We'll create a chain of transactions
@@ -1003,7 +1003,7 @@ func TestSignalsReplacement(t *testing.T) {
 		},
 		{
 			name: "explicit signaling",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase := ctx.addCoinbaseTx(1)
 				coinbaseOut := txOutToSpendableOut(coinbase, 0)
 				outs := []spendableOutput{coinbaseOut}
@@ -1056,7 +1056,7 @@ func TestCheckPoolDoubleSpend(t *testing.T) {
 
 	testCases := []struct {
 		name          string
-		setup         func(ctx *testContext) *btcutil.Tx
+		setup         func(ctx *testContext) *lbcutil.Tx
 		isReplacement bool
 	}{
 		{
@@ -1064,7 +1064,7 @@ func TestCheckPoolDoubleSpend(t *testing.T) {
 			// regardless of whether they signal replacement or not,
 			// are valid.
 			name: "no double spend",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				coinbaseOut := txOutToSpendableOut(coinbase, 0)
@@ -1081,7 +1081,7 @@ func TestCheckPoolDoubleSpend(t *testing.T) {
 			// Transactions that don't signal replacement and double
 			// spend inputs are invalid.
 			name: "non-replacement double spend",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase1 := ctx.addCoinbaseTx(1)
 				coinbaseOut1 := txOutToSpendableOut(coinbase1, 0)
 				outs := []spendableOutput{coinbaseOut1}
@@ -1115,7 +1115,7 @@ func TestCheckPoolDoubleSpend(t *testing.T) {
 			// replacement are invalid if the mempool's policy
 			// rejects replacements.
 			name: "reject replacement policy",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				// Set the mempool's policy to reject
 				// replacements. Even if we have a transaction
 				// that spends inputs that signal replacement,
@@ -1156,7 +1156,7 @@ func TestCheckPoolDoubleSpend(t *testing.T) {
 			// replacement are valid as long as the mempool's policy
 			// accepts them.
 			name: "replacement double spend",
-			setup: func(ctx *testContext) *btcutil.Tx {
+			setup: func(ctx *testContext) *lbcutil.Tx {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// Create a replaceable parent that spends the
@@ -1236,7 +1236,7 @@ func TestConflicts(t *testing.T) {
 		// setup sets up the required dependencies for each test. It
 		// returns the transaction we'll check for conflicts and its
 		// expected unique conflicts.
-		setup func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx)
+		setup func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx)
 	}{
 		{
 			// Create a transaction that would introduce no
@@ -1244,7 +1244,7 @@ func TestConflicts(t *testing.T) {
 			// spending any outputs that are currently being spent
 			// within the mempool.
 			name: "no conflicts",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				coinbaseOut := txOutToSpendableOut(coinbase, 0)
@@ -1270,7 +1270,7 @@ func TestConflicts(t *testing.T) {
 			// which are each already being spent by a different
 			// transaction within the mempool.
 			name: "conflicts",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase1 := ctx.addCoinbaseTx(1)
 				coinbaseOut1 := txOutToSpendableOut(coinbase1, 0)
 				outs := []spendableOutput{coinbaseOut1}
@@ -1296,7 +1296,7 @@ func TestConflicts(t *testing.T) {
 						"transaction: %v", err)
 				}
 
-				return tx, []*btcutil.Tx{conflict1, conflict2}
+				return tx, []*lbcutil.Tx{conflict1, conflict2}
 			},
 		},
 		{
@@ -1308,7 +1308,7 @@ func TestConflicts(t *testing.T) {
 			// the output, i.e., a descendant of the original
 			// spender.
 			name: "descendant conflicts",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// Create a replaceable parent that spends the
@@ -1334,7 +1334,7 @@ func TestConflicts(t *testing.T) {
 						"transaction: %v", err)
 				}
 
-				return tx, []*btcutil.Tx{parent, child}
+				return tx, []*lbcutil.Tx{parent, child}
 			},
 		},
 	}
@@ -1457,18 +1457,18 @@ func TestAncestorsDescendants(t *testing.T) {
 func TestRBF(t *testing.T) {
 	t.Parallel()
 
-	const defaultFee = btcutil.SatoshiPerBitcoin
+	const defaultFee = lbcutil.SatoshiPerBitcoin
 
 	testCases := []struct {
 		name  string
-		setup func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx)
+		setup func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx)
 		err   string
 	}{
 		{
 			// A transaction cannot replace another if it doesn't
 			// signal replacement.
 			name: "non-replaceable parent",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// Create a transaction that spends the coinbase
@@ -1497,7 +1497,7 @@ func TestRBF(t *testing.T) {
 			// A transaction cannot replace another if we don't
 			// allow accepting replacement transactions.
 			name: "reject replacement policy",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				ctx.harness.txPool.cfg.Policy.RejectReplacement = true
 
 				coinbase := ctx.addCoinbaseTx(1)
@@ -1529,7 +1529,7 @@ func TestRBF(t *testing.T) {
 			// would cause more than 100 transactions being
 			// replaced.
 			name: "exceeds maximum conflicts",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				const numDescendants = 100
 				coinbaseOuts := make(
 					[]spendableOutput, numDescendants,
@@ -1576,7 +1576,7 @@ func TestRBF(t *testing.T) {
 			// replacement ends up spending an output that belongs
 			// to one of the transactions it replaces.
 			name: "replacement spends parent transaction",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// Create a transaction that spends the coinbase
@@ -1609,7 +1609,7 @@ func TestRBF(t *testing.T) {
 			// lower fee rate than any of the transactions it
 			// intends to replace.
 			name: "insufficient fee rate",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase1 := ctx.addCoinbaseTx(1)
 				coinbase2 := ctx.addCoinbaseTx(1)
 
@@ -1647,7 +1647,7 @@ func TestRBF(t *testing.T) {
 			// replacing _plus_ the replacement transaction's
 			// minimum relay fee.
 			name: "insufficient absolute fee",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// We'll create a transaction with two outputs
@@ -1677,7 +1677,7 @@ func TestRBF(t *testing.T) {
 			// a new unconfirmed input that was not already in any
 			// of the transactions it's directly replacing.
 			name: "spends new unconfirmed input",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase1 := ctx.addCoinbaseTx(1)
 				coinbase2 := ctx.addCoinbaseTx(1)
 
@@ -1713,7 +1713,7 @@ func TestRBF(t *testing.T) {
 		{
 			// A transaction can replace another with a higher fee.
 			name: "higher fee",
-			setup: func(ctx *testContext) (*btcutil.Tx, []*btcutil.Tx) {
+			setup: func(ctx *testContext) (*lbcutil.Tx, []*lbcutil.Tx) {
 				coinbase := ctx.addCoinbaseTx(1)
 
 				// Create a transaction that we'll directly
@@ -1745,7 +1745,7 @@ func TestRBF(t *testing.T) {
 						"transaction: %v", err)
 				}
 
-				return tx, []*btcutil.Tx{parent, child}
+				return tx, []*lbcutil.Tx{parent, child}
 			},
 			err: "",
 		},
