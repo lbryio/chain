@@ -194,13 +194,13 @@ func isBIP0030Node(node *blockNode) bool {
 func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 	h := int64(height)
 	if h == 0 {
-		return btcutil.SatoshiPerBitcoin * 4e8
+		return lbcutil.SatoshiPerBitcoin * 4e8
 	}
 	if h <= 5100 {
-		return btcutil.SatoshiPerBitcoin
+		return lbcutil.SatoshiPerBitcoin
 	}
 	if h <= 55000 {
-		return btcutil.SatoshiPerBitcoin * (1 + (h-5001)/100)
+		return lbcutil.SatoshiPerBitcoin * (1 + (h-5001)/100)
 	}
 
 	lv := (h - 55001) / int64(chainParams.SubsidyReductionInterval)
@@ -212,7 +212,7 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 			reduction++
 		}
 	}
-	subsidyReduction := btcutil.SatoshiPerBitcoin * reduction
+	subsidyReduction := lbcutil.SatoshiPerBitcoin * reduction
 	if subsidyReduction >= baseSubsidy {
 		return 0
 	}

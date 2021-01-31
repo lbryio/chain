@@ -3,7 +3,7 @@ package txscript
 import (
 	"fmt"
 
-	"github.com/btcsuite/btcd/wire"
+	"github.com/lbryio/lbrycrd.go/wire"
 )
 
 const (

@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/lbryio/lbrycrd.go/chaincfg/chainhash"
 
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/lbcutil"
 
-	"github.com/btcsuite/btcd/btcjson"
+	"github.com/lbryio/lbrycrd.go/btcjson"
 	"github.com/lbryio/claimtrie/claim"
 )
 
@@ -22,8 +22,8 @@ func amountToLBC(amt claim.Amount) string {
 		sign = "-"
 		amt = -amt
 	}
-	quotient := amt / btcutil.SatoshiPerBitcoin
-	remainder := amt % btcutil.SatoshiPerBitcoin
+	quotient := amt / lbcutil.SatoshiPerBitcoin
+	remainder := amt % lbcutil.SatoshiPerBitcoin
 	return fmt.Sprintf("%s%d.%08d", sign, quotient, remainder)
 }
 

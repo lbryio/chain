@@ -1,7 +1,7 @@
 integration
 ===========
 
-[![Build Status](http://img.shields.io/travis/btcsuite/btcd.svg)](https://travis-ci.org/btcsuite/btcd)
+[![Build Status](http://img.shields.io/travis/lbryio/lbrycrd.go.svg)](https://travis-ci.org/lbryio/lbrycrd.go)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 
 This contains integration tests which make use of the

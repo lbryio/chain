@@ -11,5 +11,5 @@ configurations.
 
 |Name|Port|
 |----|----|
-|Default Bitcoin peer-to-peer port|TCP 8333|
+|Default Bitcoin peer-to-peer port|TCP 9246|
 |Default RPC port|TCP 9245|

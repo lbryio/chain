@@ -153,7 +153,7 @@ func TestCalcPriority(t *testing.T) {
 			utxoView: newUtxoViewpoint([]*wire.MsgTx{commonSourceTx1},
 				[]int32{100}),
 			nextHeight: 100000,
-			want:       3083333333333.3335,
+			want:       3092463333333.3335,
 		},
 	}
 

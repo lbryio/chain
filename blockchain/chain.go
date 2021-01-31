@@ -11,12 +11,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lbryio/claimtrie/claim"
+	"github.com/lbryio/lbcutil"
 	"github.com/lbryio/lbrycrd.go/chaincfg"
 	"github.com/lbryio/lbrycrd.go/chaincfg/chainhash"
 	"github.com/lbryio/lbrycrd.go/database"
 	"github.com/lbryio/lbrycrd.go/txscript"
 	"github.com/lbryio/lbrycrd.go/wire"
-	"github.com/lbryio/lbcutil"
 )
 
 const (
@@ -1787,7 +1788,7 @@ func New(config *Config) (*BlockChain, error) {
 	// Helper function to insert the output in genesis block in to the
 	// transaction database.
 	fn := func(dbTx database.Tx) error {
-		genesisBlock := btcutil.NewBlock(b.chainParams.GenesisBlock)
+		genesisBlock := lbcutil.NewBlock(b.chainParams.GenesisBlock)
 		view := NewUtxoViewpoint()
 		if err := view.connectTransactions(genesisBlock, nil); err != nil {
 			return err

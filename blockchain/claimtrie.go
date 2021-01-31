@@ -7,15 +7,15 @@ import (
 	"github.com/lbryio/claimtrie/change"
 	"github.com/lbryio/claimtrie/claim"
 
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
+	"github.com/lbryio/lbrycrd.go/txscript"
+	"github.com/lbryio/lbrycrd.go/wire"
+	"github.com/btcsuite/lbcutil"
 
 	"github.com/pkg/errors"
 )
 
 // CheckClaimScripts extracts ClaimScripts from transactions, if any, and updates ClaimTrie accordingly.
-func (b *BlockChain) CheckClaimScripts(block *btcutil.Block, node *blockNode, view *UtxoViewpoint) error {
+func (b *BlockChain) CheckClaimScripts(block *lbcutil.Block, node *blockNode, view *UtxoViewpoint) error {
 	ht := block.Height()
 	for _, tx := range block.Transactions() {
 		h := handler{ht, tx, view, map[string]bool{}}
@@ -36,7 +36,7 @@ func (b *BlockChain) CheckClaimScripts(block *btcutil.Block, node *blockNode, vi
 
 type handler struct {
 	ht    int32
-	tx    *btcutil.Tx
+	tx    *lbcutil.Tx
 	view  *UtxoViewpoint
 	spent map[string]bool
 }
