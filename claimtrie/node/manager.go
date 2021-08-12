@@ -349,6 +349,10 @@ func hasZeroActiveClaims(n *Node) bool {
 // aWorkaroundIsNeeded handles bugs that existed in previous versions
 func (nm *BaseManager) aWorkaroundIsNeeded(n *Node, chg change.Change) bool {
 
+	if chg.Height >= param.ActiveParams.GrandForkHeight {
+		return false
+	}
+
 	if chg.Type == change.SpendClaim || chg.Type == change.SpendSupport {
 		return false
 	}
