@@ -90,7 +90,9 @@ func New(cfg config.Config) (*ClaimTrie, error) {
 		return nil, errors.Wrap(err, "creating node base manager")
 	}
 	normalizingManager := node.NewNormalizingManager(baseManager)
-	nodeManager := &node.HashV2Manager{Manager: normalizingManager}
+	hashV2Manager := &node.HashV2Manager{Manager: normalizingManager}
+	nodeManager := &node.HashV3Manager{Manager: hashV2Manager}
+
 	cleanups = append(cleanups, nodeManager.Close)
 
 	var trie merkletrie.MerkleTrie
