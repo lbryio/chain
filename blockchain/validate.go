@@ -547,7 +547,7 @@ func checkBlockSanity(block *btcutil.Block, powLimit *big.Int, timeSource Median
 	// Do some preliminary checks on each transaction to ensure they are
 	// sane before continuing.
 	for _, tx := range transactions {
-		err := CheckTransactionSanity(tx, false)
+		err := CheckTransactionSanity(tx, block.Height() >= param.ActiveParams.GrandForkHeight)
 		if err != nil {
 			return err
 		}
