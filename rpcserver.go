@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/btcsuite/websocket"
+	"github.com/lbryio/lbcd/addrmgr"
 	"github.com/lbryio/lbcd/blockchain"
 	"github.com/lbryio/lbcd/blockchain/indexers"
 	"github.com/lbryio/lbcd/btcec"
@@ -160,6 +161,7 @@ var rpcHandlersBeforeInit = map[string]commandHandler{
 	"getmininginfo":          handleGetMiningInfo,
 	"getnettotals":           handleGetNetTotals,
 	"getnetworkhashps":       handleGetNetworkHashPS,
+	"getnetworkinfo":         handleGetNetworkInfo,
 	"getnodeaddresses":       handleGetNodeAddresses,
 	"getpeerinfo":            handleGetPeerInfo,
 	"getrawmempool":          handleGetRawMempool,
@@ -234,7 +236,6 @@ var rpcUnimplemented = map[string]struct{}{
 	"estimatepriority": {},
 	"getchaintips":     {},
 	"getmempoolentry":  {},
-	"getnetworkinfo":   {},
 	"getwork":          {},
 	"invalidateblock":  {},
 	"preciousblock":    {},
@@ -2603,6 +2604,84 @@ func handleGetNodeAddresses(s *rpcServer, cmd interface{}, closeChan <-chan stru
 	return addresses, nil
 }
 
+// handleGetNetworkInfo implements the getnetworkinfo command.
+func handleGetNetworkInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
+	ver := wire.MsgVersion{}
+	_ = ver.AddUserAgent(userAgentName, userAgentVersion, cfg.UserAgentComments...)
+
+	var localAddrs []btcjson.LocalAddressesResult
+	var ipv4Reachable, ipv6Reachable bool
+	for _, addr := range s.cfg.AddrMgr.LocalAddresses() {
+		localAddrs = append(localAddrs, btcjson.LocalAddressesResult{
+			Address: addr.NA.IP.String(),
+			Port:    addr.NA.Port,
+			Score:   int32(addr.Score),
+		})
+		if addr.NA.IP.To4() != nil {
+			ipv4Reachable = true
+		} else {
+			ipv6Reachable = true
+		}
+	}
+
+	onionProxy := cfg.Proxy
+	if cfg.OnionProxy != "" {
+		onionProxy = cfg.OnionProxy
+	}
+
+	var warnings string
+	unknownRulesWarned := s.cfg.Chain.GetWarnings()
+	if unknownRulesWarned {
+		warnings = "Warning: Unknown new rules activated! "
+	}
+
+	var timeOffset int64
+	if !s.cfg.SyncMgr.IsCurrent() {
+		ss := s.cfg.Chain.BestSnapshot()
+		bestHeader, err := s.cfg.Chain.HeaderByHash(&ss.Hash)
+		if err != nil {
+			return nil, err
+		}
+		timeOffset = int64(time.Since(bestHeader.Timestamp).Seconds())
+	}
+
+	reply := &btcjson.GetNetworkInfoResult{
+		ProtocolVersion: int32(wire.ProtocolVersion),
+		Version:         versionNumeric(),
+		Connections:     s.cfg.ConnMgr.ConnectedCount(),
+		IncrementalFee:  cfg.MinRelayTxFee,
+		LocalAddresses:  localAddrs,
+		LocalRelay:      !cfg.BlocksOnly,
+		LocalServices:   s.cfg.Services.String(),
+		NetworkActive:   true,
+		Networks: []btcjson.NetworksResult{
+			{
+				Name:      "ipv4",
+				Reachable: ipv4Reachable,
+				Proxy:     cfg.Proxy,
+			},
+			{
+				Name:      "ipv6",
+				Reachable: ipv6Reachable,
+				Proxy:     cfg.Proxy,
+			},
+			{
+				Name: "onion",
+
+				ProxyRandomizeCredentials: cfg.TorIsolation,
+
+				Proxy:     onionProxy,
+				Reachable: cfg.Proxy != "" || cfg.OnionProxy != "",
+			},
+		},
+		RelayFee:   cfg.MinRelayTxFee,
+		SubVersion: ver.UserAgent,
+		TimeOffset: timeOffset,
+		Warnings:   warnings,
+	}
+	return reply, nil
+}
+
 // handleGetPeerInfo implements the getpeerinfo command.
 func handleGetPeerInfo(s *rpcServer, cmd interface{}, closeChan <-chan struct{}) (interface{}, error) {
 	peers := s.cfg.ConnMgr.ConnectedPeers()
@@ -4662,6 +4741,9 @@ type rpcserverConfig struct {
 	// connection-related data and tasks.
 	ConnMgr rpcserverConnManager
 
+	// AddrMgr is the server's instance of the AddressManager.
+	AddrMgr *addrmgr.AddrManager
+
 	// SyncMgr defines the sync manager for the RPC server to use.
 	SyncMgr rpcserverSyncManager
 
@@ -4692,6 +4774,9 @@ type rpcserverConfig struct {
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	FeeEstimator *mempool.FeeEstimator
+
+	// Services represents the services supported by this node.
+	Services wire.ServiceFlag
 }
 
 // newRPCServer returns a new instance of the rpcServer struct.

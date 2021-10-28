@@ -45,7 +45,7 @@ type AddrManager struct {
 	nTried         int
 	nNew           int
 	lamtx          sync.Mutex
-	localAddresses map[string]*localAddress
+	localAddresses map[string]*LocalAddress
 	version        int
 }
 
@@ -69,9 +69,9 @@ type serializedAddrManager struct {
 	TriedBuckets [triedBucketCount][]string
 }
 
-type localAddress struct {
-	na    *wire.NetAddress
-	score AddressPriority
+type LocalAddress struct {
+	NA    *wire.NetAddress
+	Score AddressPriority
 }
 
 // AddressPriority type is used to describe the hierarchy of local address
@@ -178,7 +178,7 @@ func (a *AddrManager) updateAddress(netAddr, srcAddr *wire.NetAddress) {
 		// note that to prevent causing excess garbage on getaddr
 		// messages the netaddresses in addrmaanger are *immutable*,
 		// if we need to change them then we replace the pointer with a
-		// new copy so that we don't have to copy every na for getaddr.
+		// new copy so that we don't have to copy every NA for getaddr.
 		if netAddr.Timestamp.After(ka.na.Timestamp) ||
 			(ka.na.Services&netAddr.Services) !=
 				netAddr.Services {
@@ -753,7 +753,7 @@ func (a *AddrManager) HostToNetAddress(host string, port uint16, services wire.S
 // the relevant .onion address.
 func ipString(na *wire.NetAddress) string {
 	if IsOnionCatTor(na) {
-		// We know now that na.IP is long enough.
+		// We know now that NA.IP is long enough.
 		base32 := base32.StdEncoding.EncodeToString(na.IP[6:])
 		return strings.ToLower(base32) + ".onion"
 	}
@@ -877,7 +877,7 @@ func (a *AddrManager) Connected(addr *wire.NetAddress) {
 	// so.
 	now := time.Now()
 	if now.After(ka.na.Timestamp.Add(time.Minute * 20)) {
-		// ka.na is immutable, so replace it.
+		// ka.NA is immutable, so replace it.
 		naCopy := *ka.na
 		naCopy.Timestamp = time.Now()
 		ka.na = &naCopy
@@ -985,14 +985,14 @@ func (a *AddrManager) SetServices(addr *wire.NetAddress, services wire.ServiceFl
 
 	// Update the services if needed.
 	if ka.na.Services != services {
-		// ka.na is immutable, so replace it.
+		// ka.NA is immutable, so replace it.
 		naCopy := *ka.na
 		naCopy.Services = services
 		ka.na = &naCopy
 	}
 }
 
-// AddLocalAddress adds na to the list of known local addresses to advertise
+// AddLocalAddress adds NA to the list of known local addresses to advertise
 // with the given priority.
 func (a *AddrManager) AddLocalAddress(na *wire.NetAddress, priority AddressPriority) error {
 	if !IsRoutable(na) {
@@ -1004,13 +1004,13 @@ func (a *AddrManager) AddLocalAddress(na *wire.NetAddress, priority AddressPrior
 
 	key := NetAddressKey(na)
 	la, ok := a.localAddresses[key]
-	if !ok || la.score < priority {
+	if !ok || la.Score < priority {
 		if ok {
-			la.score = priority + 1
+			la.Score = priority + 1
 		} else {
-			a.localAddresses[key] = &localAddress{
-				na:    na,
-				score: priority,
+			a.localAddresses[key] = &LocalAddress{
+				NA:    na,
+				Score: priority,
 			}
 		}
 	}
@@ -1106,12 +1106,12 @@ func (a *AddrManager) GetBestLocalAddress(remoteAddr *wire.NetAddress) *wire.Net
 	var bestscore AddressPriority
 	var bestAddress *wire.NetAddress
 	for _, la := range a.localAddresses {
-		reach := getReachabilityFrom(la.na, remoteAddr)
+		reach := getReachabilityFrom(la.NA, remoteAddr)
 		if reach > bestreach ||
-			(reach == bestreach && la.score > bestscore) {
+			(reach == bestreach && la.Score > bestscore) {
 			bestreach = reach
-			bestscore = la.score
-			bestAddress = la.na
+			bestscore = la.Score
+			bestAddress = la.NA
 		}
 	}
 	if bestAddress != nil {
@@ -1135,6 +1135,15 @@ func (a *AddrManager) GetBestLocalAddress(remoteAddr *wire.NetAddress) *wire.Net
 	return bestAddress
 }
 
+// LocalAddresses returns the list of local addresses for our node.
+func (a *AddrManager) LocalAddresses() []*LocalAddress {
+	var addrs []*LocalAddress
+	for _, addr := range a.localAddresses {
+		addrs = append(addrs, addr)
+	}
+	return addrs
+}
+
 // New returns a new bitcoin address manager.
 // Use Start to begin processing asynchronous address updates.
 func New(dataDir string, lookupFunc func(string) ([]net.IP, error)) *AddrManager {
@@ -1143,7 +1152,7 @@ func New(dataDir string, lookupFunc func(string) ([]net.IP, error)) *AddrManager
 		lookupFunc:     lookupFunc,
 		rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
 		quit:           make(chan struct{}),
-		localAddresses: make(map[string]*localAddress),
+		localAddresses: make(map[string]*LocalAddress),
 		version:        serialisationVersion,
 	}
 	am.reset()
