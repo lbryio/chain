@@ -11,8 +11,8 @@
 # For more information how to use this docker image visit:
 # https://github.com/lbryio/lbcd/tree/master/docs
 #
-# 8333  Mainnet Bitcoin peer-to-peer port
-# 8334  Mainet RPC port
+# 9246  Mainnet Bitcoin peer-to-peer port
+# 9245  Mainet RPC port
 
 ARG ARCH=amd64
 
