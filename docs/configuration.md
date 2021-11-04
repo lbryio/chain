@@ -16,29 +16,29 @@ interfaces as a couple of the examples below illustrate.
 
 Command Line Examples:
 
-|Flags|Comment|
-|----------|------------|
-|--listen=|all interfaces on default port which is changed by `--testnet` and `--regtest` (**default**)|
-|--listen=0.0.0.0|all IPv4 interfaces on default port which is changed by `--testnet` and `--regtest`|
-|--listen=::|all IPv6 interfaces on default port which is changed by `--testnet` and `--regtest`|
-|--listen=:8333|all interfaces on port 8333|
-|--listen=0.0.0.0:8333|all IPv4 interfaces on port 8333|
-|--listen=[::]:8333|all IPv6 interfaces on port 8333|
-|--listen=127.0.0.1:8333|only IPv4 localhost on port 8333|
-|--listen=[::1]:8333|only IPv6 localhost on port 8333|
-|--listen=:8336|all interfaces on non-standard port 8336|
-|--listen=0.0.0.0:8336|all IPv4 interfaces on non-standard port 8336|
-|--listen=[::]:8336|all IPv6 interfaces on non-standard port 8336|
-|--listen=127.0.0.1:8337 --listen=[::1]:8333|IPv4 localhost on port 8337 and IPv6 localhost on port 8333|
-|--listen=:8333 --listen=:8337|all interfaces on ports 8333 and 8337|
+| Flags                                       | Comment                                                                                      |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| --listen=                                   | all interfaces on default port which is changed by `--testnet` and `--regtest` (**default**) |
+| --listen=0.0.0.0                            | all IPv4 interfaces on default port which is changed by `--testnet` and `--regtest`          |
+| --listen=::                                 | all IPv6 interfaces on default port which is changed by `--testnet` and `--regtest`          |
+| --listen=:9246                              | all interfaces on port 9246                                                                  |
+| --listen=0.0.0.0:9246                       | all IPv4 interfaces on port 9246                                                             |
+| --listen=[::]:9246                          | all IPv6 interfaces on port 9246                                                             |
+| --listen=127.0.0.1:9246                     | only IPv4 localhost on port 9246                                                             |
+| --listen=[::1]:9246                         | only IPv6 localhost on port 9246                                                             |
+| --listen=:9247                              | all interfaces on non-standard port 9247                                                     |
+| --listen=0.0.0.0:9247                       | all IPv4 interfaces on non-standard port 9247                                                |
+| --listen=[::]:9247                          | all IPv6 interfaces on non-standard port 9247                                                |
+| --listen=127.0.0.1:9248 --listen=[::1]:9246 | IPv4 localhost on port 9248 and IPv6 localhost on port 9246                                  |
+| --listen=:9246 --listen=:9248               | all interfaces on ports 9246 and 9248                                                        |
 
 The following config file would configure lbcd to only listen on localhost for both IPv4 and IPv6:
 
 ```text
 [Application Options]
 
-listen=127.0.0.1:8333
-listen=[::1]:8333
+listen=127.0.0.1:9246
+listen=[::1]:9246
 ```
 
 In addition, if you are starting lbcd with TLS and want to make it
@@ -76,21 +76,21 @@ A few things to note regarding the RPC server:
 
 Command Line Examples:
 
-|Flags|Comment|
-|----------|------------|
-|--rpclisten=|all interfaces on default port which is changed by `--testnet`|
-|--rpclisten=0.0.0.0|all IPv4 interfaces on default port which is changed by `--testnet`|
-|--rpclisten=::|all IPv6 interfaces on default port which is changed by `--testnet`|
-|--rpclisten=:8334|all interfaces on port 8334|
-|--rpclisten=0.0.0.0:8334|all IPv4 interfaces on port 8334|
-|--rpclisten=[::]:8334|all IPv6 interfaces on port 8334|
-|--rpclisten=127.0.0.1:8334|only IPv4 localhost on port 8334|
-|--rpclisten=[::1]:8334|only IPv6 localhost on port 8334|
-|--rpclisten=:8336|all interfaces on non-standard port 8336|
-|--rpclisten=0.0.0.0:8336|all IPv4 interfaces on non-standard port 8336|
-|--rpclisten=[::]:8336|all IPv6 interfaces on non-standard port 8336|
-|--rpclisten=127.0.0.1:8337 --listen=[::1]:8334|IPv4 localhost on port 8337 and IPv6 localhost on port 8334|
-|--rpclisten=:8334 --listen=:8337|all interfaces on ports 8334 and 8337|
+| Flags                                          | Comment                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------- |
+| --rpclisten=                                   | all interfaces on default port which is changed by `--testnet`      |
+| --rpclisten=0.0.0.0                            | all IPv4 interfaces on default port which is changed by `--testnet` |
+| --rpclisten=::                                 | all IPv6 interfaces on default port which is changed by `--testnet` |
+| --rpclisten=:9245                              | all interfaces on port 9245                                         |
+| --rpclisten=0.0.0.0:9245                       | all IPv4 interfaces on port 9245                                    |
+| --rpclisten=[::]:9245                          | all IPv6 interfaces on port 9245                                    |
+| --rpclisten=127.0.0.1:9245                     | only IPv4 localhost on port 9245                                    |
+| --rpclisten=[::1]:9245                         | only IPv6 localhost on port 9245                                    |
+| --rpclisten=:9247                              | all interfaces on non-standard port 9247                            |
+| --rpclisten=0.0.0.0:9247                       | all IPv4 interfaces on non-standard port 9247                       |
+| --rpclisten=[::]:9247                          | all IPv6 interfaces on non-standard port 9247                       |
+| --rpclisten=127.0.0.1:9248 --listen=[::1]:9245 | IPv4 localhost on port 9248 and IPv6 localhost on port 9245         |
+| --rpclisten=:9245 --listen=:9248               | all interfaces on ports 9245 and 9248                               |
 
 The following config file would configure the lbcd RPC server to listen to all interfaces on the default port, including external interfaces, for both IPv4 and IPv6:
 
@@ -113,10 +113,10 @@ peer-to-peer port should be forwarded unless you specifically want to allow RPC
 access to your lbcd from external sources such as in more advanced network
 configurations. You can disable UPnP with the `--noupnp` daemon option.
 
-|Name|Port|
-|----|----|
-|Default peer-to-peer port|TCP 9246|
-|Default RPC port|TCP 9245|
+| Name                      | Port     |
+| ------------------------- | -------- |
+| Default peer-to-peer port | TCP 9246 |
+| Default RPC port          | TCP 9245 |
 
 ## Using bootstrap.dat
 
