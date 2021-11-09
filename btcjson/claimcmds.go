@@ -55,11 +55,12 @@ type GetClaimsForNameBySeqCmd struct {
 }
 
 type GetClaimsForNameResult struct {
-	Hash           string        `json:"hash"`
-	Height         int32         `json:"height"`
-	NormalizedName string        `json:"normalizedname"`
-	Claims         []ClaimResult `json:"claims"`
-	// UnclaimedSupports []SupportResult `json:"unclaimedSupports"` how would this work with other constraints?
+	Hash               string        `json:"hash"`
+	Height             int32         `json:"height"`
+	LastTakeoverHeight int32         `json:"lasttakeoverheight"`
+	NormalizedName     string        `json:"normalizedname"`
+	Claims             []ClaimResult `json:"claims"`
+	// UnclaimedSupports []SupportResult `json:"supportswithoutclaim"` how would this work with other constraints?
 }
 
 type SupportResult struct {
@@ -80,6 +81,7 @@ type ClaimResult struct {
 	Sequence        int32           `json:"sequence"`
 	Height          int32           `json:"height"`
 	ValidAtHeight   int32           `json:"validatheight"`
+	Amount          int64           `json:"amount"`
 	EffectiveAmount int64           `json:"effectiveamount"`
 	Supports        []SupportResult `json:"supports,omitempty"`
 	Address         string          `json:"address,omitempty"`

@@ -117,10 +117,11 @@ func handleGetClaimsForName(s *rpcServer, cmd interface{}, _ <-chan struct{}) (i
 	}
 
 	return btcjson.GetClaimsForNameResult{
-		Hash:           hash,
-		Height:         height,
-		NormalizedName: name,
-		Claims:         results,
+		Hash:               hash,
+		Height:             height,
+		LastTakeoverHeight: n.TakenOverAt,
+		NormalizedName:     name,
+		Claims:             results,
 	}, nil
 }
 
@@ -155,10 +156,11 @@ func handleGetClaimsForNameByID(s *rpcServer, cmd interface{}, _ <-chan struct{}
 	}
 
 	return btcjson.GetClaimsForNameResult{
-		Hash:           hash,
-		Height:         height,
-		NormalizedName: name,
-		Claims:         results,
+		Hash:               hash,
+		Height:             height,
+		LastTakeoverHeight: n.TakenOverAt,
+		NormalizedName:     name,
+		Claims:             results,
 	}, nil
 }
 
@@ -190,10 +192,11 @@ func handleGetClaimsForNameByBid(s *rpcServer, cmd interface{}, _ <-chan struct{
 	}
 
 	return btcjson.GetClaimsForNameResult{
-		Hash:           hash,
-		Height:         height,
-		NormalizedName: name,
-		Claims:         results,
+		Hash:               hash,
+		Height:             height,
+		LastTakeoverHeight: n.TakenOverAt,
+		NormalizedName:     name,
+		Claims:             results,
 	}, nil
 }
 
@@ -230,10 +233,11 @@ func handleGetClaimsForNameBySeq(s *rpcServer, cmd interface{}, _ <-chan struct{
 	}
 
 	return btcjson.GetClaimsForNameResult{
-		Hash:           hash,
-		Height:         height,
-		NormalizedName: name,
-		Claims:         results,
+		Hash:               hash,
+		Height:             height,
+		LastTakeoverHeight: n.TakenOverAt,
+		NormalizedName:     name,
+		Claims:             results,
 	}, nil
 }
 
@@ -248,6 +252,7 @@ func toClaimResult(s *rpcServer, i int32, node *node.Node, includeValues *bool) 
 		TXID:            claim.OutPoint.Hash.String(),
 		N:               claim.OutPoint.Index,
 		Bid:             i, // assuming sorted by bid
+		Amount:          claim.Amount,
 		EffectiveAmount: claim.Amount + node.SupportSums[claim.ClaimID.Key()],
 		Sequence:        claim.Sequence,
 		Supports:        supports,
