@@ -197,7 +197,7 @@ func isUpdateClaim(pops []parsedOpcode) bool {
 		pops[5].opcode.value == OP_2DROP
 }
 
-const illegalChars = "=&#:*$@%?/;\\\b\n\t\r\x00"
+const illegalChars = "=&#:*$%?/;\\\b\n\t\r\x00"
 
 func AllClaimsAreSane(script []byte, enforceSoftFork bool) error {
 	cs, err := DecodeClaimScript(script)
