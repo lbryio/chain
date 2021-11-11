@@ -16,7 +16,7 @@
 
 ARG ARCH=amd64
 
-FROM golang:1.16-alpine3.14 AS build-container
+FROM golang:1.17-buster AS build-container
 
 ARG ARCH
 ENV GO111MODULE=on
@@ -37,4 +37,4 @@ VOLUME ["/root/.lbcd"]
 
 EXPOSE 9245 9246
 
-ENTRYPOINT ["lbcd"]
+ENTRYPOINT ["/app/run.sh"]
