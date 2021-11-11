@@ -1,0 +1,20 @@
+version: "3"
+
+volumes:
+  lbcd:
+
+services:
+  lbcd:
+    image: jeffreypicard/lbcd:deployment
+    container_name: lbcd
+    environment:
+      - LISTEN_ADDR= # Set me
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - lbcd:/root/.lbcd
+    ports:
+      - "9245:9245"
+      - "9246:9246"
