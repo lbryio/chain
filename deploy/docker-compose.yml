@@ -2,19 +2,18 @@ version: "3"
 
 volumes:
   lbcd:
+    external: true
 
 services:
   lbcd:
     image: jeffreypicard/lbcd:deployment
     container_name: lbcd
-    environment:
-      - LISTEN_ADDR= # Set me
     ulimits:
       memlock:
         soft: -1
         hard: -1
     volumes:
-      - lbcd:/root/.lbcd
+      - lbcd:/root/.lbcd:rw
     ports:
-      - "9245:9245"
+      - "REPLACE_ME:9245:9245"
       - "9246:9246"
