@@ -29,7 +29,7 @@ RUN set -ex \
 FROM debian:11-slim
 
 COPY --from=build-container /app/lbcd /
-COPY --from=build-container /app/deploy/run.sh /
+COPY --from=build-container /app/contrib/linode/run.sh /
 
 VOLUME ["/root/.lbcd"]
 
