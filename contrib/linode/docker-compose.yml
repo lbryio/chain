@@ -6,7 +6,7 @@ volumes:
 
 services:
   lbcd:
-    image: jeffreypicard/lbcd:deployment
+    image: lbry/lbcd:linode_deployment
     container_name: lbcd
     ulimits:
       memlock:
