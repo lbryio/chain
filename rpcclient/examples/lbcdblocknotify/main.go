@@ -49,6 +49,7 @@ func main() {
 		rpcserver   = flag.String("rpcserver", "localhost:9245", "LBCD RPC server")
 		rpcuser     = flag.String("rpcuser", "rpcuser", "LBCD RPC username")
 		rpcpass     = flag.String("rpcpass", "rpcpass", "LBCD RPC password")
+		notls       = flag.Bool("notls", false, "Connect to LBCD with TLS disabled")
 	)
 
 	flag.Parse()
@@ -78,6 +79,7 @@ func main() {
 		User:         *rpcuser,
 		Pass:         *rpcpass,
 		Certificates: certs,
+		DisableTLS:   *notls,
 	}
 	client, err := rpcclient.New(connCfg, &ntfnHandlers)
 	if err != nil {
