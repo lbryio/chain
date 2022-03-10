@@ -52,3 +52,4 @@ lbcctl
 
 # CI artifacts
 dist
+debug
