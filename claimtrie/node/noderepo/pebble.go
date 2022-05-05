@@ -21,7 +21,6 @@ func NewPebble(path string) (*Pebble, error) {
 	return repo, errors.Wrapf(err, "unable to open %s", path)
 }
 
-// AppendChanges makes an assumption that anything you pass to it is newer than what was saved before.
 func (repo *Pebble) AppendChanges(changes []change.Change) error {
 
 	batch := repo.db.NewBatch()
@@ -62,6 +61,7 @@ func unmarshalChanges(name, data []byte) ([]change.Change, error) {
 	changes := make([]change.Change, 0, len(data)/84+1) // average is 5.1 changes
 
 	buffer := bytes.NewBuffer(data)
+	sortNeeded := false
 	for buffer.Len() > 0 {
 		var chg change.Change
 		err := chg.Unmarshal(buffer)
@@ -69,14 +69,18 @@ func unmarshalChanges(name, data []byte) ([]change.Change, error) {
 			return nil, errors.Wrap(err, "in decode")
 		}
 		chg.Name = name
+		if len(changes) > 0 && chg.Height < changes[len(changes)-1].Height {
+			sortNeeded = true // alternately: sortNeeded || chg.Height != chg.VisibleHeight
+		}
 		changes = append(changes, chg)
 	}
 
-	// this was required for the normalization stuff:
-	sort.SliceStable(changes, func(i, j int) bool {
-		return changes[i].Height < changes[j].Height
-	})
-
+	if sortNeeded {
+		// this was required for the normalization stuff:
+		sort.SliceStable(changes, func(i, j int) bool {
+			return changes[i].Height < changes[j].Height
+		})
+	}
 	return changes, nil
 }
 
@@ -85,22 +89,24 @@ func (repo *Pebble) DropChanges(name []byte, finalHeight int32) error {
 	if err != nil {
 		return errors.Wrapf(err, "in load changes for %s", name)
 	}
-	i := 0
-	for ; i < len(changes); i++ { // assuming changes are ordered by height
+	buffer := bytes.NewBuffer(nil)
+	for i := 0; i < len(changes); i++ { // assuming changes are ordered by height
 		if changes[i].Height > finalHeight {
 			break
 		}
-		if changes[i].VisibleHeight > finalHeight { // created after this height has to be deleted
-			changes = append(changes[:i], changes[i+1:]...)
-			i--
+		if changes[i].VisibleHeight > finalHeight { // created after this height has to be skipped
+			continue
+		}
+		// having to sort the changes really messes up performance here. It would be better to not remarshal
+		err := changes[i].Marshal(buffer)
+		if err != nil {
+			return errors.Wrap(err, "in marshaller")
 		}
 	}
+
 	// making a performance assumption that DropChanges won't happen often:
-	err = repo.db.Set(name, []byte{}, pebble.NoSync)
-	if err != nil {
-		return errors.Wrapf(err, "in set at %s", name)
-	}
-	return repo.AppendChanges(changes[:i])
+	err = repo.db.Set(name, buffer.Bytes(), pebble.NoSync)
+	return errors.Wrapf(err, "in set at %s", name)
 }
 
 func (repo *Pebble) IterateChildren(name []byte, f func(changes []change.Change) bool) error {
