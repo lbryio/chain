@@ -13,8 +13,8 @@ import (
 
 type Manager interface {
 	AppendChange(chg change.Change)
-	IncrementHeightTo(height int32) ([][]byte, error)
-	DecrementHeightTo(affectedNames [][]byte, height int32) error
+	IncrementHeightTo(height int32, temporary bool) ([][]byte, error)
+	DecrementHeightTo(affectedNames [][]byte, height int32) ([][]byte, error)
 	Height() int32
 	Close() error
 	NodeAt(height int32, name []byte) (*Node, error)
@@ -28,6 +28,8 @@ type BaseManager struct {
 
 	height  int32
 	changes []change.Change
+
+	tempChanges map[string][]change.Change
 }
 
 func NewBaseManager(repo Repo) (*BaseManager, error) {
@@ -44,6 +46,10 @@ func (nm *BaseManager) NodeAt(height int32, name []byte) (*Node, error) {
 	changes, err := nm.repo.LoadChanges(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "in load changes")
+	}
+
+	if nm.tempChanges != nil { // making an assumption that we only ever have tempChanges for a single block
+		changes = append(changes, nm.tempChanges[string(name)]...)
 	}
 
 	n, err := nm.newNodeFromChanges(changes, height)
@@ -187,7 +193,7 @@ func collectChildNames(changes []change.Change) {
 //	}
 //}
 
-func (nm *BaseManager) IncrementHeightTo(height int32) ([][]byte, error) {
+func (nm *BaseManager) IncrementHeightTo(height int32, temporary bool) ([][]byte, error) {
 
 	if height <= nm.height {
 		panic("invalid height")
@@ -198,13 +204,25 @@ func (nm *BaseManager) IncrementHeightTo(height int32) ([][]byte, error) {
 		collectChildNames(nm.changes)
 	}
 
+	if temporary {
+		if nm.tempChanges != nil {
+			return nil, errors.Errorf("expected nil temporary changes")
+		}
+		nm.tempChanges = map[string][]change.Change{}
+	}
 	names := make([][]byte, 0, len(nm.changes))
 	for i := range nm.changes {
 		names = append(names, nm.changes[i].Name)
+		if temporary {
+			name := string(nm.changes[i].Name)
+			nm.tempChanges[name] = append(nm.tempChanges[name], nm.changes[i])
+		}
 	}
 
-	if err := nm.repo.AppendChanges(nm.changes); err != nil { // destroys names
-		return nil, errors.Wrap(err, "in append changes")
+	if !temporary {
+		if err := nm.repo.AppendChanges(nm.changes); err != nil { // destroys names
+			return nil, errors.Wrap(err, "in append changes")
+		}
 	}
 
 	// Truncate the buffer size to zero.
@@ -218,20 +236,29 @@ func (nm *BaseManager) IncrementHeightTo(height int32) ([][]byte, error) {
 	return names, nil
 }
 
-func (nm *BaseManager) DecrementHeightTo(affectedNames [][]byte, height int32) error {
+func (nm *BaseManager) DecrementHeightTo(affectedNames [][]byte, height int32) ([][]byte, error) {
 	if height >= nm.height {
-		return errors.Errorf("invalid height of %d for %d", height, nm.height)
+		return affectedNames, errors.Errorf("invalid height of %d for %d", height, nm.height)
 	}
 
-	for _, name := range affectedNames {
-		if err := nm.repo.DropChanges(name, height); err != nil {
-			return errors.Wrap(err, "in drop changes")
+	if nm.tempChanges != nil {
+		if height != nm.height-1 {
+			return affectedNames, errors.Errorf("invalid temporary rollback at %d to %d", height, nm.height)
+		}
+		for key := range nm.tempChanges {
+			affectedNames = append(affectedNames, []byte(key))
+		}
+		nm.tempChanges = nil
+	} else {
+		for _, name := range affectedNames {
+			if err := nm.repo.DropChanges(name, height); err != nil {
+				return affectedNames, errors.Wrap(err, "in drop changes")
+			}
 		}
 	}
-
 	nm.height = height
 
-	return nil
+	return affectedNames, nil
 }
 
 func (nm *BaseManager) getDelayForName(n *Node, chg change.Change) int32 {

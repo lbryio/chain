@@ -26,12 +26,12 @@ func (nm *NormalizingManager) AppendChange(chg change.Change) {
 	nm.Manager.AppendChange(chg)
 }
 
-func (nm *NormalizingManager) IncrementHeightTo(height int32) ([][]byte, error) {
+func (nm *NormalizingManager) IncrementHeightTo(height int32, temporary bool) ([][]byte, error) {
 	nm.addNormalizationForkChangesIfNecessary(height)
-	return nm.Manager.IncrementHeightTo(height)
+	return nm.Manager.IncrementHeightTo(height, temporary)
 }
 
-func (nm *NormalizingManager) DecrementHeightTo(affectedNames [][]byte, height int32) error {
+func (nm *NormalizingManager) DecrementHeightTo(affectedNames [][]byte, height int32) ([][]byte, error) {
 	if nm.normalizedAt > height {
 		nm.normalizedAt = -1
 	}

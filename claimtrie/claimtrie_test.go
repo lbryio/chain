@@ -81,7 +81,7 @@ func TestEmptyHashFork(t *testing.T) {
 	defer ct.Close()
 
 	for i := 0; i < 5; i++ {
-		err := ct.AppendBlock()
+		err := ct.AppendBlock(false)
 		r.NoError(err)
 	}
 }
@@ -378,7 +378,7 @@ func incrementBlock(r *require.Assertions, ct *ClaimTrie, c int32) {
 		r.NoError(err)
 	} else {
 		for ; c > 0; c-- {
-			err := ct.AppendBlock()
+			err := ct.AppendBlock(false)
 			r.NoError(err)
 		}
 	}
@@ -996,7 +996,7 @@ func TestBlock884431(t *testing.T) {
 	o6 := add("testing", 20)
 
 	for i := 0; i < 10; i++ {
-		err = ct.AppendBlock()
+		err = ct.AppendBlock(false)
 		r.NoError(err)
 	}
 	n, err := ct.NodeAt(ct.height, []byte("go"))

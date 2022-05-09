@@ -133,7 +133,7 @@ func New(cfg config.Config) (*ClaimTrie, error) {
 			ct.Close() // TODO: the cleanups aren't run when we exit with an err above here (but should be)
 			return nil, errors.Wrap(err, "block repo get")
 		}
-		_, err = nodeManager.IncrementHeightTo(previousHeight)
+		_, err = nodeManager.IncrementHeightTo(previousHeight, false)
 		if err != nil {
 			ct.Close()
 			return nil, errors.Wrap(err, "increment height to")
@@ -221,11 +221,11 @@ func (ct *ClaimTrie) SpendSupport(name []byte, op wire.OutPoint, id change.Claim
 }
 
 // AppendBlock increases block by one.
-func (ct *ClaimTrie) AppendBlock() error {
+func (ct *ClaimTrie) AppendBlock(temporary bool) error {
 
 	ct.height++
 
-	names, err := ct.nodeManager.IncrementHeightTo(ct.height)
+	names, err := ct.nodeManager.IncrementHeightTo(ct.height, temporary)
 	if err != nil {
 		return errors.Wrap(err, "node manager increment")
 	}
@@ -258,7 +258,7 @@ func (ct *ClaimTrie) AppendBlock() error {
 		updateNames = append(updateNames, newName)
 		updateHeights = append(updateHeights, nhn.Next)
 	}
-	if len(updateNames) != 0 {
+	if !temporary && len(updateNames) > 0 {
 		err = ct.temporalRepo.SetNodesAt(updateNames, updateHeights)
 		if err != nil {
 			return errors.Wrap(err, "temporal repo set")
@@ -266,9 +266,11 @@ func (ct *ClaimTrie) AppendBlock() error {
 	}
 
 	hitFork := ct.updateTrieForHashForkIfNecessary()
-
 	h := ct.MerkleHash()
-	ct.blockRepo.Set(ct.height, h)
+
+	if !temporary {
+		ct.blockRepo.Set(ct.height, h)
+	}
 
 	if hitFork {
 		err = ct.merkleTrie.SetRoot(h) // for clearing the memory entirely
@@ -311,7 +313,7 @@ func (ct *ClaimTrie) ResetHeight(height int32) error {
 		}
 		names = append(names, results...)
 	}
-	err := ct.nodeManager.DecrementHeightTo(names, height)
+	names, err := ct.nodeManager.DecrementHeightTo(names, height)
 	if err != nil {
 		return err
 	}

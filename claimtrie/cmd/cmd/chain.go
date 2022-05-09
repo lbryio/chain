@@ -193,7 +193,7 @@ func NewChainReplayCommand() *cobra.Command {
 
 func appendBlock(ct *claimtrie.ClaimTrie, chain *blockchain.BlockChain) error {
 
-	err := ct.AppendBlock()
+	err := ct.AppendBlock(false)
 	if err != nil {
 		return errors.Wrapf(err, "append block: %w")
 	}

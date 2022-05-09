@@ -44,7 +44,7 @@ func (b *BlockChain) ParseClaimScripts(block *btcutil.Block, bn *blockNode, view
 		}
 	}
 
-	err := b.claimTrie.AppendBlock()
+	err := b.claimTrie.AppendBlock(bn == nil)
 	if err != nil {
 		return errors.Wrapf(err, "in append block")
 	}

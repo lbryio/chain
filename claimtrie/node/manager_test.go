@@ -54,17 +54,17 @@ func TestSimpleAddClaim(t *testing.T) {
 	r.NoError(err)
 	defer m.Close()
 
-	_, err = m.IncrementHeightTo(10)
+	_, err = m.IncrementHeightTo(10, false)
 	r.NoError(err)
 
 	chg := change.NewChange(change.AddClaim).SetName(name1).SetOutPoint(out1).SetHeight(11)
 	m.AppendChange(chg)
-	_, err = m.IncrementHeightTo(11)
+	_, err = m.IncrementHeightTo(11, false)
 	r.NoError(err)
 
 	chg = chg.SetName(name2).SetOutPoint(out2).SetHeight(12)
 	m.AppendChange(chg)
-	_, err = m.IncrementHeightTo(12)
+	_, err = m.IncrementHeightTo(12, false)
 	r.NoError(err)
 
 	n1, err := m.node(name1)
@@ -77,13 +77,13 @@ func TestSimpleAddClaim(t *testing.T) {
 	r.Equal(1, len(n2.Claims))
 	r.NotNil(n2.Claims.find(byOut(*out2)))
 
-	err = m.DecrementHeightTo([][]byte{name2}, 11)
+	_, err = m.DecrementHeightTo([][]byte{name2}, 11)
 	r.NoError(err)
 	n2, err = m.node(name2)
 	r.NoError(err)
 	r.Nil(n2)
 
-	err = m.DecrementHeightTo([][]byte{name1}, 1)
+	_, err = m.DecrementHeightTo([][]byte{name1}, 1)
 	r.NoError(err)
 	n2, err = m.node(name1)
 	r.NoError(err)
@@ -102,7 +102,7 @@ func TestSupportAmounts(t *testing.T) {
 	r.NoError(err)
 	defer m.Close()
 
-	_, err = m.IncrementHeightTo(10)
+	_, err = m.IncrementHeightTo(10, false)
 	r.NoError(err)
 
 	chg := change.NewChange(change.AddClaim).SetName(name1).SetOutPoint(out1).SetHeight(11).SetAmount(3)
@@ -113,7 +113,7 @@ func TestSupportAmounts(t *testing.T) {
 	chg.ClaimID = change.NewClaimID(*out2)
 	m.AppendChange(chg)
 
-	_, err = m.IncrementHeightTo(11)
+	_, err = m.IncrementHeightTo(11, false)
 	r.NoError(err)
 
 	chg = change.NewChange(change.AddSupport).SetName(name1).SetOutPoint(out3).SetHeight(12).SetAmount(2)
@@ -128,7 +128,7 @@ func TestSupportAmounts(t *testing.T) {
 	chg.ClaimID = change.NewClaimID(*out2)
 	m.AppendChange(chg)
 
-	_, err = m.IncrementHeightTo(20)
+	_, err = m.IncrementHeightTo(20, false)
 	r.NoError(err)
 
 	n1, err := m.node(name1)
@@ -194,14 +194,14 @@ func TestHasChildren(t *testing.T) {
 	chg := change.NewChange(change.AddClaim).SetName([]byte("a")).SetOutPoint(out1).SetHeight(1).SetAmount(2)
 	chg.ClaimID = change.NewClaimID(*out1)
 	m.AppendChange(chg)
-	_, err = m.IncrementHeightTo(1)
+	_, err = m.IncrementHeightTo(1, false)
 	r.NoError(err)
 	r.False(m.hasChildren([]byte("a"), 1, nil, 1))
 
 	chg = change.NewChange(change.AddClaim).SetName([]byte("ab")).SetOutPoint(out2).SetHeight(2).SetAmount(2)
 	chg.ClaimID = change.NewClaimID(*out2)
 	m.AppendChange(chg)
-	_, err = m.IncrementHeightTo(2)
+	_, err = m.IncrementHeightTo(2, false)
 	r.NoError(err)
 	r.False(m.hasChildren([]byte("a"), 2, nil, 2))
 	r.True(m.hasChildren([]byte("a"), 2, nil, 1))
@@ -209,14 +209,14 @@ func TestHasChildren(t *testing.T) {
 	chg = change.NewChange(change.AddClaim).SetName([]byte("abc")).SetOutPoint(out3).SetHeight(3).SetAmount(2)
 	chg.ClaimID = change.NewClaimID(*out3)
 	m.AppendChange(chg)
-	_, err = m.IncrementHeightTo(3)
+	_, err = m.IncrementHeightTo(3, false)
 	r.NoError(err)
 	r.False(m.hasChildren([]byte("a"), 3, nil, 2))
 
 	chg = change.NewChange(change.AddClaim).SetName([]byte("ac")).SetOutPoint(out1).SetHeight(4).SetAmount(2)
 	chg.ClaimID = change.NewClaimID(*out4)
 	m.AppendChange(chg)
-	_, err = m.IncrementHeightTo(4)
+	_, err = m.IncrementHeightTo(4, false)
 	r.NoError(err)
 	r.True(m.hasChildren([]byte("a"), 4, nil, 2))
 }
@@ -247,4 +247,53 @@ func TestCollectChildren(t *testing.T) {
 	r.True(c[5].SpentChildren["ac"])
 
 	r.Len(c[7].SpentChildren, 0)
+}
+
+func TestTemporaryAddClaim(t *testing.T) {
+
+	r := require.New(t)
+
+	param.SetNetwork(wire.TestNet)
+	repo, err := noderepo.NewPebble(t.TempDir())
+	r.NoError(err)
+
+	m, err := NewBaseManager(repo)
+	r.NoError(err)
+	defer m.Close()
+
+	_, err = m.IncrementHeightTo(10, false)
+	r.NoError(err)
+
+	chg := change.NewChange(change.AddClaim).SetName(name1).SetOutPoint(out1).SetHeight(11)
+	m.AppendChange(chg)
+	_, err = m.IncrementHeightTo(11, false)
+	r.NoError(err)
+
+	chg = chg.SetName(name2).SetOutPoint(out2).SetHeight(12)
+	m.AppendChange(chg)
+	_, err = m.IncrementHeightTo(12, true)
+	r.NoError(err)
+
+	n1, err := m.node(name1)
+	r.NoError(err)
+	r.Equal(1, len(n1.Claims))
+	r.NotNil(n1.Claims.find(byOut(*out1)))
+
+	n2, err := m.node(name2)
+	r.NoError(err)
+	r.Equal(1, len(n2.Claims))
+	r.NotNil(n2.Claims.find(byOut(*out2)))
+
+	names, err := m.DecrementHeightTo([][]byte{name2}, 11)
+	r.Equal(names[0], name2)
+	r.NoError(err)
+	n2, err = m.node(name2)
+	r.NoError(err)
+	r.Nil(n2)
+
+	_, err = m.DecrementHeightTo([][]byte{name1}, 1)
+	r.NoError(err)
+	n2, err = m.node(name1)
+	r.NoError(err)
+	r.Nil(n2)
 }
