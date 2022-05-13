@@ -29,7 +29,7 @@ jobs:
       - name: Create datadir
         run: echo "TEMP_DATA_DIR=$(mktemp -d)" >> $GITHUB_ENV
       - name: Run lbcd
-        run: ./lbcd --datadir=${{env.TEMP_DATA_DIR}}/data --logdir=${{env.TEMP_DATA_DIR}}/logs --connect=127.0.0.1 --norpc
+        run: ./lbcd --datadir=${{env.TEMP_DATA_DIR}}/data --logdir=${{env.TEMP_DATA_DIR}}/logs --nolisten --norpc
       - name: Remove datadir
         if: always()
         run: rm -rf ${{env.TEMP_DATA_DIR}}

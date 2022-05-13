@@ -31,7 +31,7 @@ jobs:
       - name: Copy initial data
         run: cp -r /home/lbry/lbcd_814k/* ${{env.TEMP_DATA_DIR}}
       - name: Run lbcd
-        run: ./lbcd --datadir=${{env.TEMP_DATA_DIR}}/data --logdir=${{env.TEMP_DATA_DIR}}/logs --connect=127.0.0.1 --norpc
+        run: ./lbcd --datadir=${{env.TEMP_DATA_DIR}}/data --logdir=${{env.TEMP_DATA_DIR}}/logs --nolisten --norpc
       - name: Remove datadir
         if: always()
         run: rm -rf ${{env.TEMP_DATA_DIR}}
