@@ -35,8 +35,6 @@ COPY --from=build-container /go/bin /bin
 
 VOLUME ["/root/.lbcd"]
 
-RUN   echo "txindex=1" >> /root/.lbcd/lbcd.conf
-
 EXPOSE 9245 9246
 
 ENTRYPOINT ["lbcd"]
