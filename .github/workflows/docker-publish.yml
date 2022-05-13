@@ -15,7 +15,7 @@ on:
 
 env:
   # github.repository as <account>/<repo>
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: madiator2011/lbcd
 
 
 jobs:
