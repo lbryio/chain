@@ -9,7 +9,7 @@ on:
   push:
     branches: [ master ]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: [ 'latest' ]
   pull_request:
     branches: [ master ]
 
@@ -61,7 +61,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: madiator2011/lbcd
 
       # Build and push Docker image with Buildx (don't push on PR)
       # https://github.com/docker/build-push-action
