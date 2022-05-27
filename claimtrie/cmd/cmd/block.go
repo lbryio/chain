@@ -23,7 +23,6 @@ func NewBlocCommands() *cobra.Command {
 
 	return cmd
 }
-
 func NewBlockBestCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
