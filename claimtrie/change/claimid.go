@@ -39,8 +39,8 @@ func NewIDFromString(s string) (id ClaimID, err error) {
 }
 
 // Key is for in-memory maps
-func (id ClaimID) Key() string {
-	return string(id[:])
+func (id ClaimID) Key() ClaimID {
+	return id
 }
 
 // String is for anything written to a DB

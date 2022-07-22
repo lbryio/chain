@@ -106,6 +106,7 @@ func handleGetClaimsForName(s *rpcServer, cmd interface{}, _ <-chan struct{}) (i
 			Message: "Message: " + err.Error(),
 		}
 	}
+	defer n.Close()
 
 	var results []btcjson.ClaimResult
 	for i := range n.Claims {
@@ -140,6 +141,7 @@ func handleGetClaimsForNameByID(s *rpcServer, cmd interface{}, _ <-chan struct{}
 			Message: "Message: " + err.Error(),
 		}
 	}
+	defer n.Close()
 
 	var results []btcjson.ClaimResult
 	for i := 0; i < len(n.Claims); i++ {
@@ -179,6 +181,7 @@ func handleGetClaimsForNameByBid(s *rpcServer, cmd interface{}, _ <-chan struct{
 			Message: "Message: " + err.Error(),
 		}
 	}
+	defer n.Close()
 
 	var results []btcjson.ClaimResult
 	for _, b := range c.Bids { // claims are already sorted in bid order
@@ -215,6 +218,7 @@ func handleGetClaimsForNameBySeq(s *rpcServer, cmd interface{}, _ <-chan struct{
 			Message: "Message: " + err.Error(),
 		}
 	}
+	defer n.Close()
 
 	sm := map[int32]bool{}
 	for _, seq := range c.Sequences {

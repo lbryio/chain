@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"sync/atomic"
 
 	"github.com/lbryio/lbcd/claimtrie/change"
 	"github.com/lbryio/lbcd/claimtrie/param"
@@ -14,16 +15,43 @@ type Node struct {
 	TakenOverAt int32     // The height at when the current BestClaim took over.
 	Claims      ClaimList // List of all Claims.
 	Supports    ClaimList // List of all Supports, including orphaned ones.
-	SupportSums map[string]int64
+	SupportSums map[change.ClaimID]int64
+	refcnt      int32
 }
 
 // New returns a new node.
 func New() *Node {
-	return &Node{SupportSums: map[string]int64{}}
+	return &Node{SupportSums: map[change.ClaimID]int64{}, refcnt: 1}
 }
 
 func (n *Node) HasActiveBestClaim() bool {
 	return n.BestClaim != nil && n.BestClaim.Status == Activated
+}
+
+func (n *Node) close() {
+	n.BestClaim = nil
+	n.SupportSums = nil
+
+	for i := range n.Claims {
+		claimPool.Put(n.Claims[i])
+	}
+	n.Claims = nil
+
+	for i := range n.Supports {
+		claimPool.Put(n.Supports[i])
+	}
+	n.Supports = nil
+}
+
+func (n *Node) Close() {
+	new := atomic.AddInt32(&n.refcnt, -1)
+	if new < 0 {
+		panic("node refcnt underflow")
+	}
+	if new > 0 {
+		return
+	}
+	n.close()
 }
 
 func (n *Node) ApplyChange(chg change.Change, delay int32) error {
@@ -35,17 +63,19 @@ func (n *Node) ApplyChange(chg change.Change, delay int32) error {
 
 	switch chg.Type {
 	case change.AddClaim:
-		c := &Claim{
-			OutPoint: chg.OutPoint,
-			Amount:   chg.Amount,
-			ClaimID:  chg.ClaimID,
-			// CreatedAt:  chg.Height,
-			AcceptedAt: chg.Height,
-			ActiveAt:   chg.Height + delay,
-			VisibleAt:  visibleAt,
-			Sequence:   int32(len(n.Claims)),
-		}
-		// old := n.Claims.find(byOut(chg.OutPoint)) // TODO: remove this after proving ResetHeight works
+		c := claimPool.Get().(*Claim)
+		// set all 8 fields on c as they aren't initialized to 0:
+		c.Status = Accepted
+		c.OutPoint = chg.OutPoint
+		c.Amount = chg.Amount
+		c.ClaimID = chg.ClaimID
+		// CreatedAt:  chg.Height,
+		c.AcceptedAt = chg.Height
+		c.ActiveAt = chg.Height + delay
+		c.VisibleAt = visibleAt
+		c.Sequence = int32(len(n.Claims))
+		// removed this after proving ResetHeight works:
+		// old := n.Claims.find(byOut(chg.OutPoint))
 		// if old != nil {
 		// return errors.Errorf("CONFLICT WITH EXISTING TXO! Name: %s, Height: %d", chg.Name, chg.Height)
 		// }
@@ -63,7 +93,6 @@ func (n *Node) ApplyChange(chg change.Change, delay int32) error {
 		// 'two' at 481100, 36a719a156a1df178531f3c712b8b37f8e7cc3b36eea532df961229d936272a1:0
 
 	case change.UpdateClaim:
-		// Find and remove the claim, which has just been spent.
 		c := n.Claims.find(byID(chg.ClaimID))
 		if c != nil && c.Status == Deactivated {
 
@@ -82,14 +111,18 @@ func (n *Node) ApplyChange(chg change.Change, delay int32) error {
 			LogOnce(fmt.Sprintf("Updating claim but missing existing claim with ID %s", chg.ClaimID))
 		}
 	case change.AddSupport:
-		n.Supports = append(n.Supports, &Claim{
-			OutPoint:   chg.OutPoint,
-			Amount:     chg.Amount,
-			ClaimID:    chg.ClaimID,
-			AcceptedAt: chg.Height,
-			ActiveAt:   chg.Height + delay,
-			VisibleAt:  visibleAt,
-		})
+		s := claimPool.Get().(*Claim)
+		// set all 8 fields on s:
+		s.Status = Accepted
+		s.OutPoint = chg.OutPoint
+		s.Amount = chg.Amount
+		s.ClaimID = chg.ClaimID
+		s.AcceptedAt = chg.Height
+		s.ActiveAt = chg.Height + delay
+		s.VisibleAt = visibleAt
+		s.Sequence = int32(len(n.Supports))
+
+		n.Supports = append(n.Supports, s)
 
 	case change.SpendSupport:
 		s := n.Supports.find(byOut(chg.OutPoint))
@@ -166,7 +199,7 @@ func (n *Node) handleExpiredAndActivated(height int32) int {
 	}
 
 	changes := 0
-	update := func(items ClaimList, sums map[string]int64) ClaimList {
+	update := func(items ClaimList, sums map[change.ClaimID]int64) ClaimList {
 		for i := 0; i < len(items); i++ {
 			c := items[i]
 			if c.Status == Accepted && c.ActiveAt <= height && c.VisibleAt <= height {
@@ -343,19 +376,19 @@ func (n *Node) SortClaimsByBid() {
 func (n *Node) Clone() *Node {
 	clone := New()
 	if n.SupportSums != nil {
-		clone.SupportSums = map[string]int64{}
+		clone.SupportSums = map[change.ClaimID]int64{}
 		for key, value := range n.SupportSums {
 			clone.SupportSums[key] = value
 		}
 	}
 	clone.Supports = make(ClaimList, len(n.Supports))
 	for i, support := range n.Supports {
-		clone.Supports[i] = &Claim{}
+		clone.Supports[i] = claimPool.Get().(*Claim)
 		*clone.Supports[i] = *support
 	}
 	clone.Claims = make(ClaimList, len(n.Claims))
 	for i, claim := range n.Claims {
-		clone.Claims[i] = &Claim{}
+		clone.Claims[i] = claimPool.Get().(*Claim)
 		*clone.Claims[i] = *claim
 	}
 	clone.TakenOverAt = n.TakenOverAt

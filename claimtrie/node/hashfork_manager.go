@@ -15,6 +15,7 @@ func (nm *HashV2Manager) computeClaimHashes(name []byte) (*chainhash.Hash, int32
 	if err != nil || n == nil {
 		return nil, 0
 	}
+	defer n.Close()
 
 	n.SortClaimsByBid()
 	claimHashes := make([]*chainhash.Hash, 0, len(n.Claims))

@@ -13,7 +13,9 @@ type Repo interface {
 
 	// LoadChanges loads changes of a node up to (includes) the specified height.
 	// If no changes found, both returned slice and error will be nil.
-	LoadChanges(name []byte) ([]change.Change, error)
+	// The returned closer func() should be called to release changes after
+	// work on them is finished.
+	LoadChanges(name []byte) (changes []change.Change, closer func(), err error)
 
 	DropChanges(name []byte, finalHeight int32) error
 

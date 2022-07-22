@@ -112,11 +112,11 @@ func (repo *Pebble) AppendChanges(changes []change.Change) error {
 	return errors.Wrap(batch.Commit(pebble.NoSync), "in commit")
 }
 
-func (repo *Pebble) LoadChanges(name []byte) ([]change.Change, error) {
+func (repo *Pebble) LoadChanges(name []byte) ([]change.Change, func(), error) {
 
 	data, closer, err := repo.db.Get(name)
 	if err != nil && err != pebble.ErrNotFound {
-		return nil, errors.Wrapf(err, "in get %s", name) // does returning a name in an error expose too much?
+		return nil, nil, errors.Wrapf(err, "in get %s", name) // does returning a name in an error expose too much?
 	}
 	if closer != nil {
 		defer closer.Close()
@@ -125,9 +125,16 @@ func (repo *Pebble) LoadChanges(name []byte) ([]change.Change, error) {
 	return unmarshalChanges(name, data)
 }
 
-func unmarshalChanges(name, data []byte) ([]change.Change, error) {
-	// data is 84bytes+ per change
-	changes := make([]change.Change, 0, len(data)/84+1) // average is 5.1 changes
+var changesPool = sync.Pool{
+	New: func() interface{} {
+		return make([]change.Change, 0, 6)
+	},
+}
+
+func unmarshalChanges(name, data []byte) ([]change.Change, func(), error) {
+	// data is 84bytes+ per change, average is 5.1 changes
+	changes := changesPool.Get().([]change.Change)[:0]
+	closer := func() { changesPool.Put(changes) }
 
 	buffer := bytes.NewBuffer(data)
 	sortNeeded := false
@@ -135,7 +142,8 @@ func unmarshalChanges(name, data []byte) ([]change.Change, error) {
 		var chg change.Change
 		err := chg.Unmarshal(buffer)
 		if err != nil {
-			return nil, errors.Wrap(err, "in decode")
+			closer()
+			return nil, nil, errors.Wrap(err, "in decode")
 		}
 		chg.Name = name
 		if len(changes) > 0 && chg.Height < changes[len(changes)-1].Height {
@@ -150,14 +158,17 @@ func unmarshalChanges(name, data []byte) ([]change.Change, error) {
 			return changes[i].Height < changes[j].Height
 		})
 	}
-	return changes, nil
+
+	return changes, closer, nil
 }
 
 func (repo *Pebble) DropChanges(name []byte, finalHeight int32) error {
-	changes, err := repo.LoadChanges(name)
+	changes, closer, err := repo.LoadChanges(name)
 	if err != nil {
 		return errors.Wrapf(err, "in load changes for %s", name)
 	}
+	defer closer()
+
 	buffer := bytes.NewBuffer(nil)
 	for i := 0; i < len(changes); i++ { // assuming changes are ordered by height
 		if changes[i].Height > finalHeight {
@@ -206,10 +217,11 @@ func (repo *Pebble) IterateChildren(name []byte, f func(changes []change.Change)
 
 	for iter.First(); iter.Valid(); iter.Next() {
 		// NOTE! iter.Key() is ephemeral!
-		changes, err := unmarshalChanges(iter.Key(), iter.Value())
+		changes, closer, err := unmarshalChanges(iter.Key(), iter.Value())
 		if err != nil {
 			return errors.Wrapf(err, "from unmarshaller at %s", iter.Key())
 		}
+		defer closer()
 		if !f(changes) {
 			break
 		}

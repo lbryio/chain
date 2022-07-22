@@ -147,6 +147,7 @@ func TestNodeSort(t *testing.T) {
 	r.True(OutPointLess(*out1, *out3))
 
 	n := New()
+	defer n.Close()
 	n.Claims = append(n.Claims, &Claim{OutPoint: *out1, AcceptedAt: 3, Amount: 3, ClaimID: change.ClaimID{1}})
 	n.Claims = append(n.Claims, &Claim{OutPoint: *out2, AcceptedAt: 3, Amount: 3, ClaimID: change.ClaimID{2}})
 	n.handleExpiredAndActivated(3)
@@ -167,6 +168,7 @@ func TestClaimSort(t *testing.T) {
 	param.ActiveParams.ExtendedClaimExpirationTime = 1000
 
 	n := New()
+	defer n.Close()
 	n.Claims = append(n.Claims, &Claim{OutPoint: *out2, AcceptedAt: 3, Amount: 3, ClaimID: change.ClaimID{2}, Status: Activated})
 	n.Claims = append(n.Claims, &Claim{OutPoint: *out3, AcceptedAt: 3, Amount: 2, ClaimID: change.ClaimID{3}, Status: Activated})
 	n.Claims = append(n.Claims, &Claim{OutPoint: *out3, AcceptedAt: 4, Amount: 2, ClaimID: change.ClaimID{4}, Status: Activated})

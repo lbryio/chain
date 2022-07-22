@@ -92,8 +92,9 @@ func testNodeRepo(t *testing.T, repo node.Repo, setup, cleanup func()) {
 		err := repo.AppendChanges(tt.changes)
 		r.NoError(err)
 
-		changes, err := repo.LoadChanges(testNodeName1)
+		changes, closer, err := repo.LoadChanges(testNodeName1)
 		r.NoError(err)
+		defer closer()
 		r.Equalf(tt.expected, changes[:len(tt.expected)], tt.name)
 
 		cleanup()
@@ -150,8 +151,9 @@ func testNodeRepo(t *testing.T, repo node.Repo, setup, cleanup func()) {
 			r.NoError(err)
 		}
 
-		changes, err := repo.LoadChanges(testNodeName1)
+		changes, closer, err := repo.LoadChanges(testNodeName1)
 		r.NoError(err)
+		defer closer()
 		r.Equalf(tt.expected, changes[:len(tt.expected)], tt.name)
 
 		cleanup()

@@ -3,6 +3,7 @@ package node
 import (
 	"container/list"
 	"sync"
+	"sync/atomic"
 
 	"github.com/lbryio/lbcd/claimtrie/change"
 )
@@ -27,8 +28,11 @@ func (nc *Cache) insert(name []byte, n *Node, height int32) {
 	nc.mtx.Lock()
 	defer nc.mtx.Unlock()
 
+	atomic.AddInt32(&n.refcnt, 1)
+
 	existing := nc.nodes[key]
 	if existing != nil {
+		existing.node.Close()
 		existing.node = n
 		existing.height = height
 		existing.changes = nil
@@ -38,8 +42,11 @@ func (nc *Cache) insert(name []byte, n *Node, height int32) {
 
 	for nc.order.Len() >= nc.limit {
 		// TODO: maybe ensure that we don't remove nodes that have a lot of changes?
-		delete(nc.nodes, nc.order.Back().Value.(string))
+		exp := nc.order.Back().Value.(string)
+		expired := nc.nodes[exp]
+		delete(nc.nodes, exp)
 		nc.order.Remove(nc.order.Back())
+		expired.node.Close()
 	}
 
 	element := nc.order.PushFront(key)
@@ -55,6 +62,7 @@ func (nc *Cache) fetch(name []byte, height int32) (*Node, []change.Change, int32
 	existing := nc.nodes[key]
 	if existing != nil && existing.height <= height {
 		nc.order.MoveToFront(existing.element)
+		atomic.AddInt32(&existing.node.refcnt, 1)
 		return existing.node, existing.changes, existing.height
 	}
 	return nil, nil, -1
@@ -84,6 +92,7 @@ func (nc *Cache) drop(names [][]byte) {
 			// we can't roll it backwards because we don't know its previous height value; just toast it
 			delete(nc.nodes, key)
 			nc.order.Remove(existing.element)
+			existing.node.Close()
 		}
 	}
 }
@@ -91,6 +100,9 @@ func (nc *Cache) drop(names [][]byte) {
 func (nc *Cache) clear() {
 	nc.mtx.Lock()
 	defer nc.mtx.Unlock()
+	for _, existing := range nc.nodes {
+		existing.node.Close()
+	}
 	nc.nodes = map[string]*cacheLeaf{}
 	nc.order = list.New()
 	// we'll let the GC sort out the remains...

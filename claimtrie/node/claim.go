@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/lbryio/lbcd/chaincfg/chainhash"
 	"github.com/lbryio/lbcd/claimtrie/change"
@@ -31,6 +32,12 @@ type Claim struct {
 	Status   Status `msgpack:",omitempty"`
 	Sequence int32  `msgpack:",omitempty"`
 }
+
+func newClaim() interface{} {
+	return &Claim{}
+}
+
+var claimPool = sync.Pool{New: newClaim}
 
 func (c *Claim) setOutPoint(op wire.OutPoint) *Claim {
 	c.OutPoint = op

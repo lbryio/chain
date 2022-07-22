@@ -35,7 +35,7 @@ func (b *BlockChain) ParseClaimScripts(block *btcutil.Block, bn *blockNode, view
 	ht := block.Height()
 
 	for _, tx := range block.Transactions() {
-		h := handler{ht, tx, view, map[string][]byte{}}
+		h := handler{ht, tx, view, map[change.ClaimID][]byte{}}
 		if err := h.handleTxIns(b.claimTrie); err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ type handler struct {
 	ht    int32
 	tx    *btcutil.Tx
 	view  *UtxoViewpoint
-	spent map[string][]byte
+	spent map[change.ClaimID][]byte
 }
 
 func (h *handler) handleTxIns(ct *claimtrie.ClaimTrie) error {
@@ -171,6 +171,9 @@ func (b *BlockChain) GetClaimsForName(height int32, name string) (string, *node.
 
 	n, err := b.claimTrie.NodeAt(height, normalizedName)
 	if err != nil {
+		if n != nil {
+			n.Close()
+		}
 		return string(normalizedName), nil, err
 	}
 

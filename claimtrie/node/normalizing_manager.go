@@ -72,6 +72,7 @@ func (nm *NormalizingManager) addNormalizationForkChangesIfNecessary(height int3
 		if err != nil || n == nil {
 			return true
 		}
+		defer n.Close()
 		for _, c := range n.Claims {
 			nm.Manager.AppendChange(change.Change{
 				Type:          change.AddClaim,

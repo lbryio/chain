@@ -133,6 +133,7 @@ func TestNormalizationFork(t *testing.T) {
 	r.NoError(err)
 	r.NotNil(n.BestClaim)
 	r.Equal(int32(1), n.TakenOverAt)
+	n.Close()
 
 	o8 := wire.OutPoint{Hash: hash, Index: 8}
 	err = ct.AddClaim([]byte("aÑEJO"), o8, change.NewClaimID(o8), 8)
@@ -150,6 +151,7 @@ func TestNormalizationFork(t *testing.T) {
 	n, err = ct.nodeManager.NodeAt(ct.nodeManager.Height(), []byte("test"))
 	r.NoError(err)
 	r.Equal(int64(18), n.BestClaim.Amount+n.SupportSums[n.BestClaim.ClaimID.Key()])
+	n.Close()
 }
 
 func TestActivationsOnNormalizationFork(t *testing.T) {
@@ -229,6 +231,7 @@ func verifyBestIndex(t *testing.T, ct *ClaimTrie, name string, idx uint32, claim
 	if claims > 0 {
 		r.Equal(idx, n.BestClaim.OutPoint.Index)
 	}
+	n.Close()
 }
 
 func TestRebuild(t *testing.T) {

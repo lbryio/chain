@@ -52,10 +52,11 @@ func NewNodeDumpCommand() *cobra.Command {
 			}
 			defer repo.Close()
 
-			changes, err := repo.LoadChanges([]byte(name))
+			changes, closer, err := repo.LoadChanges([]byte(name))
 			if err != nil {
 				return errors.Wrapf(err, "load commands")
 			}
+			defer closer()
 
 			for _, chg := range changes {
 				if chg.Height > height {
@@ -107,6 +108,7 @@ func NewNodeReplayCommand() *cobra.Command {
 			}
 
 			showNode(n)
+			n.Close()
 			return nil
 		},
 	}
