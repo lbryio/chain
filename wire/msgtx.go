@@ -103,10 +103,9 @@ const (
 	maxWitnessItemsPerInput = 500000
 
 	// maxWitnessItemSize is the maximum allowed size for an item within
-	// an input's witness data. This number is derived from the fact that
-	// for script validation, each pushed item onto the stack must be less
-	// than 10k bytes.
-	maxWitnessItemSize = 11000
+	// an input's witness data. This value is bounded by the largest
+	// possible block size, post segwit v1 (taproot).
+	maxWitnessItemSize = 4_000_000
 )
 
 // TxFlagMarker is the first byte of the FLAG field in a bitcoin tx
@@ -588,8 +587,9 @@ func (msg *MsgTx) BtcDecode(r io.Reader, pver uint32, enc MessageEncoding) error
 			// item itself.
 			txin.Witness = make([][]byte, witCount)
 			for j := uint64(0); j < witCount; j++ {
-				txin.Witness[j], err = readScript(r, pver,
-					maxWitnessItemSize, "script witness item")
+				txin.Witness[j], err = readScript(
+					r, pver, maxWitnessItemSize, "script witness item",
+				)
 				if err != nil {
 					returnScriptBuffers()
 					return err
