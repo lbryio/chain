@@ -2062,14 +2062,14 @@ func (r FutureRescanBlockchainResult) Receive() (*btcjson.RescanBlockchainResult
 // returned instance.
 //
 // See RescanBlockchain for the blocking version and more details.
-func (c *Client) RescanBlockchainAsync(startHeight *int64, stopHeight *int64) FutureRescanBlockchainResult {
+func (c *Client) RescanBlockchainAsync(startHeight *int32, stopHeight *int32) FutureRescanBlockchainResult {
 	cmd := btcjson.NewRescanBlockchainCmd(startHeight, stopHeight)
 	return c.SendCmd(cmd)
 }
 
 // RescanBlockchain rescans the local blockchain for wallet related
 // transactions from the startHeight to the the inclusive stopHeight.
-func (c *Client) RescanBlockchain(startHeight *int64, stopHeight *int64) (*btcjson.RescanBlockchainResult, error) {
+func (c *Client) RescanBlockchain(startHeight *int32, stopHeight *int32) (*btcjson.RescanBlockchainResult, error) {
 	return c.RescanBlockchainAsync(startHeight, stopHeight).Receive()
 }
 

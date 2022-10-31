@@ -977,8 +977,8 @@ func NewImportMultiCmd(requests []ImportMultiRequest, options *ImportMultiOption
 
 // RescanBlockchainCmd defines the RescanBlockchain JSON-RPC command.
 type RescanBlockchainCmd struct {
-	StartHeight *int64 `jsonrpcdefault:"0"`
-	StopHeight  *int64 `jsonrpcdefault:"0"`
+	StartHeight *int32 `jsonrpcdefault:"0"`
+	StopHeight  *int32
 }
 
 // NewRescanBlockchainCmd returns a new instance which can be used to issue
@@ -986,7 +986,7 @@ type RescanBlockchainCmd struct {
 //
 // The parameters which are pointers indicate they are optional. Passing nil
 // for optional parameters will use the default value.
-func NewRescanBlockchainCmd(startHeight *int64, stopHeight *int64) *RescanBlockchainCmd {
+func NewRescanBlockchainCmd(startHeight *int32, stopHeight *int32) *RescanBlockchainCmd {
 	return &RescanBlockchainCmd{
 		StartHeight: startHeight,
 		StopHeight:  stopHeight,
