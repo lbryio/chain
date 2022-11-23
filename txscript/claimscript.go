@@ -206,7 +206,7 @@ func StripClaimScriptPrefix(script []byte) []byte {
 	return script[cs.Size:]
 }
 
-const illegalChars = "=&#:*$%?/;\\\b\n\t\r\x00"
+const illegalChars = "=&#:$%?/;\\\b\n\t\r\x00"
 
 func AllClaimsAreSane(script []byte, enforceSoftFork bool) error {
 	cs, err := ExtractClaimScript(script)
