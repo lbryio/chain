@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/lbryio/lbcd/wire"
+
 	"github.com/lbryio/lbcd/chaincfg/chainhash"
 	"github.com/lbryio/lbcd/txscript"
 	btcutil "github.com/lbryio/lbcutil"
@@ -86,7 +88,7 @@ func HashMerkleBranches(left *chainhash.Hash, right *chainhash.Hash) *chainhash.
 //
 // The above stored as a linear array is as follows:
 //
-// 	[h1 h2 h3 h4 h12 h34 root]
+//	[h1 h2 h3 h4 h12 h34 root]
 //
 // As the above shows, the merkle root is always the last element in the array.
 //
@@ -221,6 +223,16 @@ func ValidateWitnessCommitment(blk *btcutil.Block) error {
 			}
 		}
 		return nil
+	}
+
+	if len(coinbaseTx.MsgTx().TxIn[0].Witness) == 0 {
+		str := fmt.Sprintf("pre-BIP0141 coinbase transaction detected. "+
+			"Height: %d", blk.Height())
+		log.Info(str)
+
+		var witnessNonce [CoinbaseWitnessDataLen]byte
+		coinbaseTx.MsgTx().TxIn[0].Witness = wire.TxWitness{witnessNonce[:]}
+		blk.MsgBlock().Transactions[0].TxIn[0].Witness = wire.TxWitness{witnessNonce[:]}
 	}
 
 	// At this point the block contains a witness commitment, so the
