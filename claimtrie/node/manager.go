@@ -92,12 +92,6 @@ func (nm *BaseManager) NodeAt(height int32, name []byte) (*Node, error) {
 	return n, nil
 }
 
-// Node returns a node at the current height.
-// The returned node may have pending changes.
-func (nm *BaseManager) node(name []byte) (*Node, error) {
-	return nm.NodeAt(nm.height, name)
-}
-
 func (nm *BaseManager) updateFromChanges(n *Node, changes []change.Change, height int32) (bool, error) {
 
 	count := len(changes)
@@ -436,17 +430,17 @@ func (nm *BaseManager) IterateNames(predicate func(name []byte) bool) {
 
 func (nm *BaseManager) Hash(name []byte) (*chainhash.Hash, int32) {
 
-	n, err := nm.node(name)
+	n, err := nm.NodeAt(nm.height, name)
 	if err != nil || n == nil {
 		return nil, 0
 	}
 	if len(n.Claims) > 0 {
 		if n.BestClaim != nil && n.BestClaim.Status == Activated {
 			h := calculateNodeHash(n.BestClaim.OutPoint, n.TakenOverAt)
-			return h, n.NextUpdate()
+			return h, n.NextUpdate(nm.height)
 		}
 	}
-	return nil, n.NextUpdate()
+	return nil, n.NextUpdate(nm.height)
 }
 
 func (nm *BaseManager) Flush() error {

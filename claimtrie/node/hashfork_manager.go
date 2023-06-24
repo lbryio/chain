@@ -24,9 +24,9 @@ func (nm *HashV2Manager) computeClaimHashes(name []byte) (*chainhash.Hash, int32
 		}
 	}
 	if len(claimHashes) > 0 {
-		return ComputeMerkleRoot(claimHashes), n.NextUpdate()
+		return ComputeMerkleRoot(claimHashes), n.NextUpdate(nm.Height())
 	}
-	return nil, n.NextUpdate()
+	return nil, n.NextUpdate(nm.Height())
 }
 
 func (nm *HashV2Manager) Hash(name []byte) (*chainhash.Hash, int32) {
