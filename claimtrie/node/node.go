@@ -114,7 +114,10 @@ func (n *Node) AdjustTo(height, maxHeight int32, name []byte) {
 	changed := n.handleExpiredAndActivated(height) > 0
 	n.updateTakeoverHeight(height, name, changed)
 	if maxHeight > height {
-		for h := n.NextUpdate(); h <= maxHeight; h = n.NextUpdate() {
+		for h := n.NextUpdate(height); h <= maxHeight; h = n.NextUpdate(height) {
+			if h <= 0 {
+				break
+			}
 			changed = n.handleExpiredAndActivated(h) > 0
 			n.updateTakeoverHeight(h, name, changed)
 			height = h
@@ -176,7 +179,7 @@ func (n *Node) handleExpiredAndActivated(height int32) int {
 					sums[c.ClaimID.Key()] += c.Amount
 				}
 			}
-			if c.Status == Deactivated || expiresAt(c) <= height {
+			if c.Status == Deactivated || (height < param.ActiveParams.GrandForkHeight && expiresAt(c) <= height) {
 				if i < len(items)-1 {
 					items[i] = items[len(items)-1]
 					i--
@@ -197,7 +200,7 @@ func (n *Node) handleExpiredAndActivated(height int32) int {
 
 // NextUpdate returns the nearest height in the future that the node should
 // be refreshed due to changes of claims or supports.
-func (n Node) NextUpdate() int32 {
+func (n Node) NextUpdate(height int32) int32 {
 
 	ot := param.ActiveParams.OriginalClaimExpirationTime
 	et := param.ActiveParams.ExtendedClaimExpirationTime
@@ -212,9 +215,11 @@ func (n Node) NextUpdate() int32 {
 	next := int32(math.MaxInt32)
 
 	for _, c := range n.Claims {
-		ea := expiresAt(c)
-		if ea < next {
-			next = ea
+		if height < param.ActiveParams.GrandForkHeight {
+			es := expiresAt(c)
+			if es < next {
+				next = es
+			}
 		}
 		// if we're not active, we need to go to activeAt unless we're still invisible there
 		if c.Status == Accepted {
@@ -229,9 +234,11 @@ func (n Node) NextUpdate() int32 {
 	}
 
 	for _, s := range n.Supports {
-		es := expiresAt(s)
-		if es < next {
-			next = es
+		if height < param.ActiveParams.GrandForkHeight {
+			es := expiresAt(s)
+			if es < next {
+				next = es
+			}
 		}
 		if s.Status == Accepted {
 			min := s.ActiveAt
@@ -242,6 +249,10 @@ func (n Node) NextUpdate() int32 {
 				next = min
 			}
 		}
+	}
+
+	if next == int32(math.MaxInt32) || next <= height {
+		return 0
 	}
 
 	return next

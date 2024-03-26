@@ -67,25 +67,25 @@ func TestSimpleAddClaim(t *testing.T) {
 	_, err = m.IncrementHeightTo(12, false)
 	r.NoError(err)
 
-	n1, err := m.node(name1)
+	n1, err := m.NodeAt(m.height, name1)
 	r.NoError(err)
 	r.Equal(1, len(n1.Claims))
 	r.NotNil(n1.Claims.find(byOut(*out1)))
 
-	n2, err := m.node(name2)
+	n2, err := m.NodeAt(m.height, name2)
 	r.NoError(err)
 	r.Equal(1, len(n2.Claims))
 	r.NotNil(n2.Claims.find(byOut(*out2)))
 
 	_, err = m.DecrementHeightTo([][]byte{name2}, 11)
 	r.NoError(err)
-	n2, err = m.node(name2)
+	n2, err = m.NodeAt(m.height, name2)
 	r.NoError(err)
 	r.Nil(n2)
 
 	_, err = m.DecrementHeightTo([][]byte{name1}, 1)
 	r.NoError(err)
-	n2, err = m.node(name1)
+	n2, err = m.NodeAt(m.height, name1)
 	r.NoError(err)
 	r.Nil(n2)
 }
@@ -131,7 +131,7 @@ func TestSupportAmounts(t *testing.T) {
 	_, err = m.IncrementHeightTo(20, false)
 	r.NoError(err)
 
-	n1, err := m.node(name1)
+	n1, err := m.NodeAt(m.height, name1)
 	r.NoError(err)
 	r.Equal(2, len(n1.Claims))
 	r.Equal(int64(5), n1.BestClaim.Amount+n1.SupportSums[n1.BestClaim.ClaimID.Key()])
@@ -274,12 +274,12 @@ func TestTemporaryAddClaim(t *testing.T) {
 	_, err = m.IncrementHeightTo(12, true)
 	r.NoError(err)
 
-	n1, err := m.node(name1)
+	n1, err := m.NodeAt(m.Height(), name1)
 	r.NoError(err)
 	r.Equal(1, len(n1.Claims))
 	r.NotNil(n1.Claims.find(byOut(*out1)))
 
-	n2, err := m.node(name2)
+	n2, err := m.NodeAt(m.Height(), name2)
 	r.NoError(err)
 	r.Equal(1, len(n2.Claims))
 	r.NotNil(n2.Claims.find(byOut(*out2)))
@@ -287,13 +287,45 @@ func TestTemporaryAddClaim(t *testing.T) {
 	names, err := m.DecrementHeightTo([][]byte{name2}, 11)
 	r.Equal(names[0], name2)
 	r.NoError(err)
-	n2, err = m.node(name2)
+	n2, err = m.NodeAt(m.Height(), name2)
 	r.NoError(err)
 	r.Nil(n2)
 
 	_, err = m.DecrementHeightTo([][]byte{name1}, 1)
 	r.NoError(err)
-	n2, err = m.node(name1)
+	n2, err = m.NodeAt(m.Height(), name1)
 	r.NoError(err)
 	r.Nil(n2)
+}
+
+func TestEndOfExpiration(t *testing.T) {
+	r := require.New(t)
+
+	param.SetNetwork(wire.TestNet)
+	repo, err := noderepo.NewPebble(t.TempDir())
+	r.NoError(err)
+
+	m, err := NewBaseManager(repo)
+	r.NoError(err)
+	defer m.Close()
+
+	et := param.ActiveParams.ExtendedClaimExpirationForkHeight
+	gf := param.ActiveParams.GrandForkHeight
+
+	chg := change.NewChange(change.AddClaim).SetName(name1).SetOutPoint(out1).SetHeight(et).SetAmount(2)
+	chg.ClaimID = change.NewClaimID(*out1)
+	m.AppendChange(chg)
+
+	_, err = m.IncrementHeightTo(et, false)
+	r.NoError(err)
+	n, err := m.NodeAt(m.height, name1)
+	r.NoError(err)
+	r.Equal(m.height+param.ActiveParams.ExtendedClaimExpirationTime, n.NextUpdate(m.height))
+
+	_, err = m.IncrementHeightTo(gf, false)
+	r.NoError(err)
+
+	n, err = m.NodeAt(m.height, name1)
+	r.NoError(err)
+	r.Equal(int32(0), n.NextUpdate(m.height))
 }

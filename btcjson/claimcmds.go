@@ -10,6 +10,10 @@ func init() {
 	MustRegisterCmd("getclaimsfornamebybid", (*GetClaimsForNameByBidCmd)(nil), flags)
 	MustRegisterCmd("getclaimsfornamebyseq", (*GetClaimsForNameBySeqCmd)(nil), flags)
 	MustRegisterCmd("normalize", (*GetNormalizedCmd)(nil), flags)
+
+	MustRegisterCmd("getprooffornamebyid", (*GetProofForNameByIDCmd)(nil), flags)
+	MustRegisterCmd("getprooffornamebybid", (*GetProofForNameByBidCmd)(nil), flags)
+	MustRegisterCmd("getprooffornamebyseq", (*GetProofForNameBySeqCmd)(nil), flags)
 }
 
 // optional inputs are required to be pointers, but they support things like `jsonrpcdefault:"false"`
@@ -94,4 +98,37 @@ type GetNormalizedCmd struct {
 
 type GetNormalizedResult struct {
 	NormalizedName string `json:"normalizedname"`
+}
+
+type GetProofForNameByIDCmd struct {
+	Name           string `json:"name"`
+	PartialClaimID string `json:"partialclaimid"`
+}
+
+type GetProofForNameByBidCmd struct {
+	Name string `json:"name"`
+	Bid  int    `json:"bid"`
+}
+
+type GetProofForNameBySeqCmd struct {
+	Name     string `json:"name"`
+	Sequence int    `json:"sequence"`
+}
+
+type ProofPairResult struct {
+	Right bool   `json:"right"`
+	Hash  string `json:"hash"`
+}
+
+type ProofResult struct { // should we include the claim trie hash?
+	BlockHash      string            `json:"blockhash"`
+	BlockHeight    int32             `json:"blockheight"`
+	NormalizedName string            `json:"normalizedname"`
+	ClaimID        string            `json:"claimid"`
+	TXID           string            `json:"txid"`
+	N              uint32            `json:"n"`
+	Bid            int32             `json:"bid"`
+	Sequence       int32             `json:"sequence"`
+	Takeover       int32             `json:"takeover"`
+	Pairs          []ProofPairResult `json:"pairs"`
 }

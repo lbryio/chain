@@ -8,6 +8,7 @@ import (
 	"github.com/lbryio/lbcd/claimtrie/change"
 	"github.com/lbryio/lbcd/claimtrie/config"
 	"github.com/lbryio/lbcd/claimtrie/merkletrie"
+	"github.com/lbryio/lbcd/claimtrie/node"
 	"github.com/lbryio/lbcd/claimtrie/param"
 
 	"github.com/lbryio/lbcd/chaincfg/chainhash"
@@ -1024,4 +1025,67 @@ func TestBlock884431(t *testing.T) {
 	n, err = ct.NodeAt(ct.height, []byte("test"))
 	r.NoError(err)
 	r.Equal(o11.String(), n.BestClaim.OutPoint.String())
+}
+
+func TestMerklePath(t *testing.T) {
+	r := require.New(t)
+	setup(t)
+	param.ActiveParams.ActiveDelayFactor = 1
+	param.ActiveParams.NormalizedNameForkHeight = 5
+	param.ActiveParams.AllClaimsInMerkleForkHeight = 6
+	param.ActiveParams.GrandForkHeight = 7
+
+	ct, err := New(cfg)
+	r.NoError(err)
+	r.NotNil(ct)
+	defer ct.Close()
+
+	hash := chainhash.HashH([]byte{1, 2, 3})
+	o1 := wire.OutPoint{Hash: hash, Index: 1}
+	o2 := wire.OutPoint{Hash: hash, Index: 2}
+	o3 := wire.OutPoint{Hash: hash, Index: 3}
+
+	err = ct.AddClaim([]byte("test"), o1, change.NewClaimID(o1), 1)
+	r.NoError(err)
+
+	err = ct.AddClaim([]byte("test"), o2, change.NewClaimID(o2), 2)
+	r.NoError(err)
+
+	err = ct.AddClaim([]byte("tester"), o3, change.NewClaimID(o3), 1)
+	r.NoError(err)
+
+	for i := 0; i < 10; i++ {
+		err = ct.AppendBlock(false)
+		r.NoError(err)
+	}
+
+	n, err := ct.NodeAt(ct.height, []byte("test"))
+	r.NoError(err)
+	pairs := ct.MerklePath([]byte("test"), n, 0)
+	claimHash, err := node.ComputeBidSeqNameHash([]byte("test"), n.Claims[0], 0, n.TakenOverAt)
+	r.NoError(err)
+	validatePairs(r, pairs, ct.MerkleHash(), claimHash)
+
+	pairs = ct.MerklePath([]byte("test"), n, 1)
+	claimHash, err = node.ComputeBidSeqNameHash([]byte("test"), n.Claims[1], 1, n.TakenOverAt)
+	r.NoError(err)
+	validatePairs(r, pairs, ct.MerkleHash(), claimHash)
+
+	n, err = ct.NodeAt(ct.height, []byte("tester"))
+	r.NoError(err)
+	pairs = ct.MerklePath([]byte("tester"), n, 0)
+	claimHash, err = node.ComputeBidSeqNameHash([]byte("tester"), n.Claims[0], 0, n.TakenOverAt)
+	r.NoError(err)
+	validatePairs(r, pairs, ct.MerkleHash(), claimHash)
+}
+
+func validatePairs(r *require.Assertions, pairs []merkletrie.HashSidePair, target *chainhash.Hash, claimHash *chainhash.Hash) {
+	for i := range pairs {
+		if pairs[i].Right {
+			claimHash = node.HashMerkleBranches(pairs[i].Hash, claimHash)
+		} else {
+			claimHash = node.HashMerkleBranches(claimHash, pairs[i].Hash)
+		}
+	}
+	r.True(claimHash.IsEqual(target))
 }

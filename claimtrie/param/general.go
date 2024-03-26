@@ -16,6 +16,7 @@ type ClaimTrieParams struct {
 
 	NormalizedNameForkHeight    int32
 	AllClaimsInMerkleForkHeight int32
+	GrandForkHeight             int32
 }
 
 var (
@@ -32,6 +33,7 @@ var (
 		MaxRemovalWorkaroundHeight:        658300,
 		NormalizedNameForkHeight:          539940, // targeting 21 March 2019}, https://lbry.com/news/hf1903
 		AllClaimsInMerkleForkHeight:       658309, // targeting 30 Oct 2019}, https://lbry.com/news/hf1910
+		GrandForkHeight:                   1800000,
 	}
 
 	TestNet = ClaimTrieParams{
@@ -45,6 +47,7 @@ var (
 		MaxRemovalWorkaroundHeight:        1, // if you get a hash mismatch, come back to this
 		NormalizedNameForkHeight:          993380,
 		AllClaimsInMerkleForkHeight:       1198559,
+		GrandForkHeight:                   1800000,
 	}
 
 	Regtest = ClaimTrieParams{
@@ -58,6 +61,7 @@ var (
 		MaxRemovalWorkaroundHeight:        -1,
 		NormalizedNameForkHeight:          250,
 		AllClaimsInMerkleForkHeight:       349,
+		GrandForkHeight:                   850,
 	}
 )
 

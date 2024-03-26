@@ -16,6 +16,7 @@ type MerkleTrie interface {
 	MerkleHash() *chainhash.Hash
 	MerkleHashAllClaims() *chainhash.Hash
 	Flush() error
+	MerklePath(name []byte) []HashSidePair
 }
 
 type RamTrie struct {
@@ -111,29 +112,80 @@ func (rt *RamTrie) merkleHashAllClaims(v *collapsedVertex) *chainhash.Hash {
 		return v.merkleHash
 	}
 
-	childHashes := make([]*chainhash.Hash, 0, len(v.children))
-	for _, ch := range v.children {
-		h := rt.merkleHashAllClaims(ch)
-		childHashes = append(childHashes, h)
-	}
+	childHash, hasChildren := rt.computeChildHash(v)
 
 	claimHash := NoClaimsHash
 	if v.claimHash != nil {
 		claimHash = v.claimHash
-	} else if len(childHashes) == 0 {
+	} else if !hasChildren {
 		return nil
-	}
-
-	childHash := NoChildrenHash
-	if len(childHashes) > 0 {
-		// this shouldn't be referencing node; where else can we put this merkle root func?
-		childHash = node.ComputeMerkleRoot(childHashes)
 	}
 
 	v.merkleHash = node.HashMerkleBranches(childHash, claimHash)
 	return v.merkleHash
 }
 
+func (rt *RamTrie) computeChildHash(v *collapsedVertex) (*chainhash.Hash, bool) {
+	childHashes := make([]*chainhash.Hash, 0, len(v.children))
+	for _, ch := range v.children {
+		h := rt.merkleHashAllClaims(ch)
+		childHashes = append(childHashes, h)
+	}
+	childHash := NoChildrenHash
+	if len(childHashes) > 0 {
+		// this shouldn't be referencing node; where else can we put this merkle root func?
+		childHash = node.ComputeMerkleRoot(childHashes)
+	}
+	return childHash, len(childHashes) > 0
+}
+
 func (rt *RamTrie) Flush() error {
 	return nil
+}
+
+type HashSidePair struct {
+	Right bool
+	Hash  *chainhash.Hash
+}
+
+func (rt *RamTrie) MerklePath(name []byte) []HashSidePair {
+
+	// algorithm:
+	// for each node in the path to key:
+	//   get all the childHashes for that node and the index of our path
+	//   get all the claimHashes for that node as well
+	//   if we're at the end of the path:
+	//      push(true, root(childHashes))
+	//      push all of merklePath(claimHashes, bid)
+	//   else
+	//      push(false, root(claimHashes)
+	//      push all of merklePath(childHashes, child index)
+
+	var results []HashSidePair
+
+	indexes, path := rt.FindPath(name)
+	for i := 0; i < len(indexes); i++ {
+		if i == len(indexes)-1 {
+			childHash, _ := rt.computeChildHash(path[i])
+			results = append(results, HashSidePair{Right: true, Hash: childHash})
+			// letting the caller append the claim hashes at present (needs better code organization)
+		} else {
+			ch := path[i].claimHash
+			if ch == nil {
+				ch = NoClaimsHash
+			}
+			results = append(results, HashSidePair{Right: false, Hash: ch})
+			childHashes := make([]*chainhash.Hash, 0, len(path[i].children))
+			for j := range path[i].children {
+				childHashes = append(childHashes, path[i].children[j].merkleHash)
+			}
+			if len(childHashes) > 0 {
+				partials := node.ComputeMerklePath(childHashes, indexes[i+1])
+				for i := len(partials) - 1; i >= 0; i-- {
+					results = append(results, HashSidePair{Right: ((indexes[i+1] >> i) & 1) > 0, Hash: partials[i]})
+				}
+			}
+		}
+	}
+	return results
 }

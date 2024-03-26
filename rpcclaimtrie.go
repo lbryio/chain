@@ -22,6 +22,10 @@ var claimtrieHandlers = map[string]commandHandler{
 	"getclaimsfornamebybid": handleGetClaimsForNameByBid,
 	"getclaimsfornamebyseq": handleGetClaimsForNameBySeq,
 	"normalize":             handleGetNormalized,
+
+	"getprooffornamebyid":  handleGetProofForNameByID,
+	"getprooffornamebybid": handleGetProofForNameByBid,
+	"getprooffornamebyseq": handleGetProofForNameBySeq,
 }
 
 func handleGetChangesInBlock(s *rpcServer, cmd interface{}, _ <-chan struct{}) (interface{}, error) {
@@ -349,4 +353,65 @@ func handleGetNormalized(_ *rpcServer, cmd interface{}, _ <-chan struct{}) (inte
 		NormalizedName: string(normalization.Normalize([]byte(c.Name))),
 	}
 	return r, nil
+}
+
+func handleGetProofForNameByID(s *rpcServer, cmd interface{}, _ <-chan struct{}) (interface{}, error) {
+
+	c := cmd.(*btcjson.GetProofForNameByIDCmd)
+	return getProof(s, c.Name, c.PartialClaimID, -1, -1)
+}
+
+func handleGetProofForNameByBid(s *rpcServer, cmd interface{}, _ <-chan struct{}) (interface{}, error) {
+
+	c := cmd.(*btcjson.GetProofForNameByBidCmd)
+	return getProof(s, c.Name, "", c.Bid, -1)
+}
+
+func handleGetProofForNameBySeq(s *rpcServer, cmd interface{}, _ <-chan struct{}) (interface{}, error) {
+
+	c := cmd.(*btcjson.GetProofForNameBySeqCmd)
+	return getProof(s, c.Name, "", -1, c.Sequence)
+}
+
+func getProof(s *rpcServer, name, id string, bid, seq int) (interface{}, error) {
+
+	if !s.cfg.Chain.IsCurrent() {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCClientInInitialDownload,
+			Message: "Unable to query the chain tip during initial download",
+		}
+	}
+
+	if len(name) == 0 {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCInvalidParameter,
+			Message: "name is required and cannot be empty",
+		}
+	}
+
+	bh, h, c, b, t, n, pairs, err := s.cfg.Chain.GetProofForName(name, id, bid, seq)
+	if err != nil {
+		return nil, &btcjson.RPCError{
+			Code:    btcjson.ErrRPCMisc,
+			Message: "Message: " + err.Error(),
+		}
+	}
+
+	results := make([]btcjson.ProofPairResult, 0, len(pairs))
+	for i := 0; i < len(pairs); i++ {
+		results = append(results, btcjson.ProofPairResult{Right: pairs[i].Right, Hash: pairs[i].Hash.String()})
+	}
+
+	return btcjson.ProofResult{
+		BlockHash:      bh.String(),
+		BlockHeight:    h,
+		NormalizedName: n,
+		ClaimID:        c.ClaimID.String(),
+		TXID:           c.OutPoint.Hash.String(),
+		N:              c.OutPoint.Index,
+		Bid:            b,
+		Sequence:       c.Sequence,
+		Takeover:       t,
+		Pairs:          results,
+	}, nil
 }

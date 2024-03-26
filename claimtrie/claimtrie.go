@@ -90,7 +90,9 @@ func New(cfg config.Config) (*ClaimTrie, error) {
 		return nil, errors.Wrap(err, "creating node base manager")
 	}
 	normalizingManager := node.NewNormalizingManager(baseManager)
-	nodeManager := &node.HashV2Manager{Manager: normalizingManager}
+	hashV2Manager := &node.HashV2Manager{Manager: normalizingManager}
+	nodeManager := &node.HashV3Manager{Manager: hashV2Manager}
+
 	cleanups = append(cleanups, nodeManager.Close)
 
 	var trie merkletrie.MerkleTrie
@@ -281,7 +283,8 @@ func (ct *ClaimTrie) AppendBlock(temporary bool) error {
 }
 
 func (ct *ClaimTrie) updateTrieForHashForkIfNecessary() bool {
-	if ct.height != param.ActiveParams.AllClaimsInMerkleForkHeight {
+	if ct.height != param.ActiveParams.AllClaimsInMerkleForkHeight &&
+		ct.height != param.ActiveParams.GrandForkHeight {
 		return false
 	}
 
@@ -303,7 +306,7 @@ func removeDuplicates(names [][]byte) [][]byte { // this might be too expensive;
 	return names
 }
 
-// ResetHeight resets the ClaimTrie to a previous known height..
+// ResetHeight resets the ClaimTrie to a previous known height.
 func (ct *ClaimTrie) ResetHeight(height int32) error {
 
 	names := make([][]byte, 0)
@@ -320,6 +323,9 @@ func (ct *ClaimTrie) ResetHeight(height int32) error {
 	}
 
 	passedHashFork := ct.height >= param.ActiveParams.AllClaimsInMerkleForkHeight && height < param.ActiveParams.AllClaimsInMerkleForkHeight
+	if !passedHashFork {
+		passedHashFork = ct.height >= param.ActiveParams.GrandForkHeight && height < param.ActiveParams.GrandForkHeight
+	}
 	hash, err := ct.blockRepo.Get(height)
 	if err != nil {
 		return err
@@ -450,4 +456,22 @@ func interruptRequested(interrupted <-chan struct{}) bool {
 	}
 
 	return false
+}
+
+func (ct *ClaimTrie) MerklePath(name []byte, n *node.Node, bid int) []merkletrie.HashSidePair {
+	pairs := ct.merkleTrie.MerklePath(name)
+	// TODO: organize this code better
+	// this is the 2nd half of the above merkle tree computation
+	// it's done like this so we don't have to create the Node object multiple times
+	claimHashes := node.ComputeClaimHashes(name, n)
+	partials := node.ComputeMerklePath(claimHashes, bid)
+	for i := len(partials) - 1; i >= 0; i-- {
+		pairs = append(pairs, merkletrie.HashSidePair{Right: ((bid >> i) & 1) > 0, Hash: partials[i]})
+	}
+
+	// reverse the list order:
+	for i, j := 0, len(pairs)-1; i < j; i, j = i+1, j-1 {
+		pairs[i], pairs[j] = pairs[j], pairs[i]
+	}
+	return pairs
 }
