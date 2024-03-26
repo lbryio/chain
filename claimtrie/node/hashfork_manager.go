@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 
 	"github.com/lbryio/lbcd/chaincfg/chainhash"
+	"github.com/lbryio/lbcd/claimtrie/change"
 	"github.com/lbryio/lbcd/claimtrie/param"
 )
 

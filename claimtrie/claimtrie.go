@@ -458,56 +458,6 @@ func interruptRequested(interrupted <-chan struct{}) bool {
 	return false
 }
 
-func (ct *ClaimTrie) makeNameHashNext(names [][]byte, all bool, interrupt <-chan struct{}) chan NameHashNext {
-	inputs := make(chan []byte, 512)
-	outputs := make(chan NameHashNext, 512)
-
-	var wg sync.WaitGroup
-	hashComputationWorker := func() {
-		for name := range inputs {
-			hash, next := ct.nodeManager.Hash(name)
-			outputs <- NameHashNext{name, hash, next}
-		}
-		wg.Done()
-	}
-
-	threads := int(0.8 * float32(runtime.NumCPU()))
-	if threads < 1 {
-		threads = 1
-	}
-	for threads > 0 {
-		threads--
-		wg.Add(1)
-		go hashComputationWorker()
-	}
-	go func() {
-		if all {
-			ct.nodeManager.IterateNames(func(name []byte) bool {
-				if interruptRequested(interrupt) {
-					return false
-				}
-				clone := make([]byte, len(name))
-				copy(clone, name) // iteration name buffer is reused on future loops
-				inputs <- clone
-				return true
-			})
-		} else {
-			for _, name := range names {
-				if interruptRequested(interrupt) {
-					break
-				}
-				inputs <- name
-			}
-		}
-		close(inputs)
-	}()
-	go func() {
-		wg.Wait()
-		close(outputs)
-	}()
-	return outputs
-}
-
 func (ct *ClaimTrie) MerklePath(name []byte, n *node.Node, bid int) []merkletrie.HashSidePair {
 	pairs := ct.merkleTrie.MerklePath(name)
 	// TODO: organize this code better

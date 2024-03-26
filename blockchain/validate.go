@@ -13,6 +13,7 @@ import (
 
 	"github.com/lbryio/lbcd/chaincfg"
 	"github.com/lbryio/lbcd/chaincfg/chainhash"
+	"github.com/lbryio/lbcd/claimtrie/param"
 	"github.com/lbryio/lbcd/txscript"
 	"github.com/lbryio/lbcd/wire"
 	btcutil "github.com/lbryio/lbcutil"

@@ -7,14 +7,17 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/lbryio/lbcd/chaincfg/chainhash"
 	"github.com/lbryio/lbcd/txscript"
 	"github.com/lbryio/lbcd/wire"
 	btcutil "github.com/lbryio/lbcutil"
 
 	"github.com/lbryio/lbcd/claimtrie"
 	"github.com/lbryio/lbcd/claimtrie/change"
+	"github.com/lbryio/lbcd/claimtrie/merkletrie"
 	"github.com/lbryio/lbcd/claimtrie/node"
 	"github.com/lbryio/lbcd/claimtrie/normalization"
+	"github.com/lbryio/lbcd/claimtrie/param"
 )
 
 func (b *BlockChain) SetClaimtrieHeader(block *btcutil.Block, view *UtxoViewpoint) error {

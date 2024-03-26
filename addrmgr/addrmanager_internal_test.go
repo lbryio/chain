@@ -99,7 +99,12 @@ func TestAddrManagerSerialization(t *testing.T) {
 	expectedAddrs := make(map[string]*wire.NetAddress, numAddrs)
 	for i := 0; i < numAddrs; i++ {
 		addr := randAddr(t)
+		cnt := len(expectedAddrs)
 		expectedAddrs[NetAddressKey(addr)] = addr
+		if len(expectedAddrs) == cnt {
+			i-- // accidentally generated a duplicate
+			continue
+		}
 		addrMgr.AddAddress(addr, randAddr(t))
 	}
 
