@@ -283,7 +283,8 @@ func (ct *ClaimTrie) AppendBlock(temporary bool) error {
 }
 
 func (ct *ClaimTrie) updateTrieForHashForkIfNecessary() bool {
-	if ct.height != param.ActiveParams.AllClaimsInMerkleForkHeight {
+	if ct.height != param.ActiveParams.AllClaimsInMerkleForkHeight &&
+		ct.height != param.ActiveParams.GrandForkHeight {
 		return false
 	}
 
