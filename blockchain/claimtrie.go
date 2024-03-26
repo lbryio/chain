@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -180,4 +181,69 @@ func (b *BlockChain) GetClaimsForName(height int32, name string) (string, *node.
 
 	n.SortClaimsByBid()
 	return string(normalizedName), n, nil
+}
+
+func (b *BlockChain) GetProofForName(name, id string, bid, seq int) (chainhash.Hash, int32, *node.Claim, int32, int32, string, []merkletrie.HashSidePair, error) {
+	// results: block hash, height, claim, bid, takeover, name, pairs, err
+
+	b.chainLock.RLock()
+	defer b.chainLock.RUnlock()
+
+	tip := b.bestChain.Tip()
+
+	normalizedName := normalization.NormalizeIfNecessary([]byte(name), tip.height)
+
+	if tip.height < param.ActiveParams.GrandForkHeight {
+		err := errors.Errorf("Unable to generate proofs for claims before height %d",
+			param.ActiveParams.GrandForkHeight)
+		return tip.hash, tip.height, nil, 0, 0, string(normalizedName), nil, err
+	}
+
+	n, err := b.claimTrie.NodeAt(tip.height, normalizedName)
+	if n == nil && err == nil {
+		err = errors.Errorf("Unable to locate a claim with name %s at height %d", normalizedName, tip.height)
+	}
+	if err != nil {
+		return tip.hash, tip.height, nil, 0, 0, string(normalizedName), nil, err
+	}
+
+	// now find the desired claim
+	n.SortClaimsByBid()
+	var claim *node.Claim
+	for i, c := range n.Claims {
+		if c.Status != node.Activated {
+			continue
+		}
+		if bid >= 0 && i == bid {
+			claim = c
+			bid = i
+			break
+		}
+		if seq >= 0 && int(c.Sequence) == seq {
+			claim = c
+			bid = i
+			break
+		}
+		if len(id) > 0 && strings.HasPrefix(c.ClaimID.String(), id) {
+			claim = c
+			bid = i
+			break
+		}
+	}
+	if claim == nil {
+		if bid >= 0 {
+			err = errors.Errorf("Unable to locate a claim named %s with bid %d at height %d", normalizedName, bid, tip.height)
+		}
+		if seq >= 0 {
+			err = errors.Errorf("Unable to locate a claim named %s with sequence %d at height %d", normalizedName, seq, tip.height)
+		}
+		if len(id) > 0 {
+			err = errors.Errorf("Unable to locate a claim named %s with ID %s at height %d", normalizedName, id, tip.height)
+		}
+		return tip.hash, tip.height, nil, 0, 0, string(normalizedName), nil, err
+	}
+
+	pairs := b.claimTrie.MerklePath(normalizedName, n, bid)
+
+	return tip.hash, tip.height, claim, int32(bid), n.TakenOverAt, string(normalizedName), pairs, nil
 }

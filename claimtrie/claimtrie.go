@@ -306,7 +306,7 @@ func removeDuplicates(names [][]byte) [][]byte { // this might be too expensive;
 	return names
 }
 
-// ResetHeight resets the ClaimTrie to a previous known height..
+// ResetHeight resets the ClaimTrie to a previous known height.
 func (ct *ClaimTrie) ResetHeight(height int32) error {
 
 	names := make([][]byte, 0)
@@ -323,6 +323,9 @@ func (ct *ClaimTrie) ResetHeight(height int32) error {
 	}
 
 	passedHashFork := ct.height >= param.ActiveParams.AllClaimsInMerkleForkHeight && height < param.ActiveParams.AllClaimsInMerkleForkHeight
+	if !passedHashFork {
+		passedHashFork = ct.height >= param.ActiveParams.GrandForkHeight && height < param.ActiveParams.GrandForkHeight
+	}
 	hash, err := ct.blockRepo.Get(height)
 	if err != nil {
 		return err
@@ -453,4 +456,72 @@ func interruptRequested(interrupted <-chan struct{}) bool {
 	}
 
 	return false
+}
+
+func (ct *ClaimTrie) makeNameHashNext(names [][]byte, all bool, interrupt <-chan struct{}) chan NameHashNext {
+	inputs := make(chan []byte, 512)
+	outputs := make(chan NameHashNext, 512)
+
+	var wg sync.WaitGroup
+	hashComputationWorker := func() {
+		for name := range inputs {
+			hash, next := ct.nodeManager.Hash(name)
+			outputs <- NameHashNext{name, hash, next}
+		}
+		wg.Done()
+	}
+
+	threads := int(0.8 * float32(runtime.NumCPU()))
+	if threads < 1 {
+		threads = 1
+	}
+	for threads > 0 {
+		threads--
+		wg.Add(1)
+		go hashComputationWorker()
+	}
+	go func() {
+		if all {
+			ct.nodeManager.IterateNames(func(name []byte) bool {
+				if interruptRequested(interrupt) {
+					return false
+				}
+				clone := make([]byte, len(name))
+				copy(clone, name) // iteration name buffer is reused on future loops
+				inputs <- clone
+				return true
+			})
+		} else {
+			for _, name := range names {
+				if interruptRequested(interrupt) {
+					break
+				}
+				inputs <- name
+			}
+		}
+		close(inputs)
+	}()
+	go func() {
+		wg.Wait()
+		close(outputs)
+	}()
+	return outputs
+}
+
+func (ct *ClaimTrie) MerklePath(name []byte, n *node.Node, bid int) []merkletrie.HashSidePair {
+	pairs := ct.merkleTrie.MerklePath(name)
+	// TODO: organize this code better
+	// this is the 2nd half of the above merkle tree computation
+	// it's done like this so we don't have to create the Node object multiple times
+	claimHashes := node.ComputeClaimHashes(name, n)
+	partials := node.ComputeMerklePath(claimHashes, bid)
+	for i := len(partials) - 1; i >= 0; i-- {
+		pairs = append(pairs, merkletrie.HashSidePair{Right: ((bid >> i) & 1) > 0, Hash: partials[i]})
+	}
+
+	// reverse the list order:
+	for i, j := 0, len(pairs)-1; i < j; i, j = i+1, j-1 {
+		pairs[i], pairs[j] = pairs[j], pairs[i]
+	}
+	return pairs
 }

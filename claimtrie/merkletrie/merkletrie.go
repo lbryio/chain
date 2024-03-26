@@ -253,3 +253,7 @@ func (t *PersistentTrie) Dump(s string) {
 func (t *PersistentTrie) Flush() error {
 	return t.repo.Flush()
 }
+
+func (t *PersistentTrie) MerklePath(name []byte) []HashSidePair {
+	panic("MerklePath not implemented in PersistentTrie")
+}

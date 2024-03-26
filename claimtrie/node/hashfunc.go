@@ -55,3 +55,59 @@ func calculateNodeHash(op wire.OutPoint, takeover int32) *chainhash.Hash {
 
 	return &hh
 }
+
+func ComputeMerklePath(hashes []*chainhash.Hash, idx int) []*chainhash.Hash {
+	count := 0
+	matchlevel := -1
+	matchh := false
+	var h *chainhash.Hash
+	var res []*chainhash.Hash
+	var inner [32]*chainhash.Hash // old code had 32; dunno if it's big enough for all scenarios
+
+	iterateInner := func(level int) int {
+		for ; (count & (1 << level)) == 0; level++ {
+			ihash := inner[level]
+			if matchh {
+				res = append(res, ihash)
+			} else if matchlevel == level {
+				res = append(res, h)
+				matchh = true
+			}
+			h = HashMerkleBranches(ihash, h)
+		}
+		return level
+	}
+
+	for count < len(hashes) {
+		h = hashes[count]
+		matchh = count == idx
+		count++
+		level := iterateInner(0)
+		// Store the resulting hash at inner position level.
+		inner[level] = h
+		if matchh {
+			matchlevel = level
+		}
+	}
+
+	level := 0
+	for (count & (1 << level)) == 0 {
+		level++
+	}
+
+	h = inner[level]
+	matchh = matchlevel == level
+
+	for count != (1 << level) {
+		// If we reach this point, h is an inner value that is not the top.
+		if matchh {
+			res = append(res, h)
+		}
+		h = HashMerkleBranches(h, h)
+		// Increment count to the value it would have if two entries at this
+		count += 1 << level
+		level++
+		level = iterateInner(level)
+	}
+	return res
+}
